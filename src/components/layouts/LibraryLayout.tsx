@@ -7,110 +7,88 @@ interface Member {
   username: string;
   avatar: string;
   status: string;
-  seat_id?: string | null;
+  seat_id?: string;
 }
 
 interface Props {
   members: Member[];
   joinSeat: (seatId: string) => void;
+  extraCubicles?: number;
 }
 
-type Cubicle = {
-  row: number;
-  tableId: string;
-  top: string;
-  left: string;
-  width: string;
-  seats: { seatId: string; top: string; left: string }[];
-};
+export default function LibraryLayout({
+  members,
+  joinSeat,
+  extraCubicles = 0,
+}: Props) {
 
-const cubicles: Cubicle[] = [
-  {
-    row: 1,
-    tableId: "lib-cube-1",
-    top: "18%",
-    left: "14%",
-    width: "340px",
-    seats: [
-      { seatId: "library-1", top: "-16%", left: "50%" },
-      { seatId: "library-2", top: "50%", left: "-18%" },
-      { seatId: "library-3", top: "50%", left: "118%" },
-      { seatId: "library-4", top: "116%", left: "50%" },
-      { seatId: "library-1b", top: "50%", left: "25%" },
-      { seatId: "library-1c", top: "50%", left: "75%" },
-    ],
-  },
-  {
-    row: 2,
-    tableId: "lib-cube-2",
-    top: "18%",
-    left: "56%",
-    width: "340px",
-    seats: [
-      { seatId: "library-5", top: "-16%", left: "50%" },
-      { seatId: "library-6", top: "50%", left: "-18%" },
-      { seatId: "library-7", top: "50%", left: "118%" },
-      { seatId: "library-8", top: "116%", left: "50%" },
-      { seatId: "library-5b", top: "50%", left: "25%" },
-      { seatId: "library-5c", top: "50%", left: "75%" },
-    ],
-  },
-];
+  const baseCubicles = [
+    "library-1",
+    "library-2",
+    "library-3",
+    "library-4",
+  ];
 
-export default function LibraryLayout({ members, joinSeat }: Props) {
-  const getMember = (seatId: string, fallbackIndex: number) =>
-    members.find((member) => member.seat_id === seatId) || members[fallbackIndex];
+  const generatedCubicles = [
+    ...baseCubicles,
+    ...Array.from(
+      { length: extraCubicles },
+      (_, i) => `extra-library-${i}`
+    ),
+  ];
+
+  const getMember = (seatId: string) =>
+    members.find(
+      (m) => m.seat_id === seatId
+    );
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-[40px] border-2 border-black bg-[#d7d1ca]"
-      style={{ height: "700px" }}
-    >
-      <div className="absolute left-0 top-0 h-full bg-[#4f4943]" style={{ width: "60px" }} />
-      <div className="absolute right-0 top-0 h-full bg-[#4f4943]" style={{ width: "60px" }} />
+    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-[#d9d3cb]">
 
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: "linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px)",
-          backgroundSize: "100% 80px",
-        }}
-      />
+      {/* shelves */}
+      <div className="absolute left-0 top-0 h-full w-[70px] bg-[#514a44]" />
+      <div className="absolute right-0 top-0 h-full w-[70px] bg-[#514a44]" />
 
-      <div className="absolute left-7 top-5 text-xs uppercase tracking-[0.45em] text-[#4f4943]/60">
-        Library cubicles
+      {/* cubicles */}
+      <div className="absolute left-1/2 top-[14%] -translate-x-1/2 flex flex-col gap-10">
+
+        {generatedCubicles.map((cubicleId) => {
+
+          const member =
+            getMember(cubicleId);
+
+          return (
+            <button
+              key={cubicleId}
+              onClick={() => joinSeat(cubicleId)}
+              className="w-[820px] h-[90px] rounded-[24px] border-2 border-black bg-[#b8b1aa] px-8 shadow-[0_8px_0_#8d867f] hover:translate-y-1 hover:shadow-[0_4px_0_#8d867f] transition-all"
+            >
+              {member ? (
+                <div className="flex h-full items-center gap-5">
+                  <Avatar
+                    avatar={member.avatar}
+                    username={member.username}
+                  />
+
+                  <div className="text-left">
+                    <p className="font-black text-lg">
+                      {member.username}
+                    </p>
+
+                    <p className="text-sm opacity-70">
+                      {member.status}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm opacity-40">
+                  empty cubicle
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
-
-      {cubicles.map((cubicle) => (
-        <div key={cubicle.tableId} className="absolute" style={{ top: cubicle.top, left: cubicle.left, width: cubicle.width }}>
-          <div className="relative mx-auto rounded-[18px] border-4 border-[#433a31] bg-[#b8b1aa] shadow-[0_8px_0_rgba(0,0,0,0.15)]" style={{ height: "120px" }}>
-            <div className="absolute left-0 top-0 h-full bg-[#5b4f43]" style={{ width: "18px" }} />
-            <div className="absolute right-0 top-0 h-full bg-[#5b4f43]" style={{ width: "18px" }} />
-
-            <div className="absolute top-1/2 h-0.5 -translate-y-1/2 bg-[#433a31]/30" style={{ left: "18px", right: "18px" }} />
-            <div className="absolute left-1/2 top-0 h-full -translate-x-1/2 bg-[#433a31]/25" style={{ width: "2px" }} />
-
-            {cubicle.seats.map((seat, seatIndex) => {
-              const member = getMember(seat.seatId, (cubicle.row - 1) * 6 + seatIndex);
-
-              return (
-                <button
-                  key={seat.seatId}
-                  onClick={() => joinSeat(seat.seatId)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#433a31] bg-[#f7f3ee] shadow-md flex items-center justify-center"
-                  style={{ top: seat.top, left: seat.left, width: "62px", height: "62px" }}
-                >
-                  {member ? (
-                    <Avatar avatar={member.avatar} username={member.username} />
-                  ) : (
-                    <span className="text-[10px] font-bold text-[#433a31]">+</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

@@ -2,7 +2,6 @@ interface AvatarProps {
   username: string;
   avatar: string;
 }
-
 export default function Avatar({
   username,
   avatar,

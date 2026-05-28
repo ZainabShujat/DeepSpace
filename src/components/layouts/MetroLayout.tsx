@@ -1,11 +1,13 @@
 "use client";
 
+import Avatar from "../room/Avatar";
+
 interface Member {
   id: string;
   username: string;
   avatar: string;
   status: string;
-  seat_id?: string | null;
+  seat_id?: string;
 }
 
 interface Props {
@@ -14,77 +16,128 @@ interface Props {
   extraBenches?: number;
 }
 
-const baseLeftSeats = ["metro-left-1", "metro-left-2", "metro-left-3"];
-const baseRightSeats = ["metro-right-1", "metro-right-2", "metro-right-3"];
+export default function MetroLayout({
+  members,
+  joinSeat,
+  extraBenches = 0,
+}: Props) {
 
-export default function MetroLayout({ members, joinSeat, extraBenches = 0 }: Props) {
-  const getSeatMembers = (seatId: string) =>
-    members.filter((member) => member.seat_id === seatId).slice(0, 2);
-
-  const leftSeats = [
-    ...baseLeftSeats,
-    ...Array.from({ length: extraBenches }, (_, index) => `metro-left-extra-${index + 1}`),
+  const baseSeats = [
+    "metro-1",
+    "metro-2",
+    "metro-3",
+    "metro-4",
+    "metro-5",
+    "metro-6",
   ];
 
-  const rightSeats = [
-    ...baseRightSeats,
-    ...Array.from({ length: extraBenches }, (_, index) => `metro-right-extra-${index + 1}`),
+  const generatedSeats = [
+    ...baseSeats,
+    ...Array.from(
+      { length: extraBenches },
+      (_, i) => `extra-metro-${i}`
+    ),
   ];
 
-  const renderBench = (seatId: string, top: string, left: string) => {
-    const occupants = getSeatMembers(seatId);
-
-    const renderOccupant = (member: Member) => (
-      <div key={member.id} className="flex min-w-0 flex-1 flex-col items-center justify-center text-center text-white">
-        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-black bg-white">
-          <img src={`/avatars/${member.avatar}.png`} alt={member.username} className="h-9 w-9 object-contain" />
-        </div>
-        <p className="mt-1 truncate text-[10px] font-semibold" style={{ maxWidth: "90px" }}>{member.username}</p>
-        <p className="truncate text-[9px] opacity-70" style={{ maxWidth: "90px" }}>{member.status}</p>
-      </div>
+  const getMember = (seatId: string) =>
+    members.find(
+      (m) => m.seat_id === seatId
     );
-
-    return (
-      <button
-        key={seatId}
-        onClick={() => joinSeat(seatId)}
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[28px] border-2 border-black bg-[#8f909c] shadow-[0_8px_0_#666] flex items-center justify-center overflow-hidden"
-        style={{ left, top, width: "320px", height: "110px" }}
-      >
-        {occupants.length > 0 ? (
-          <div className="flex w-full items-center justify-evenly px-5 gap-4">
-            {occupants.map(renderOccupant)}
-            {occupants.length === 1 && <div className="flex-1" />}
-          </div>
-        ) : (
-          <span className="text-xs font-bold text-white">+</span>
-        )}
-      </button>
-    );
-  };
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-[40px] border-2 border-black bg-linear-to-b from-[#d9d9de] to-[#cfcfd6]"
-      style={{ height: `${700 + extraBenches * 140}px` }}
-    >
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px)", backgroundSize: "80px 80px" }} />
-      <div className="absolute top-0 left-1/2 h-full -translate-x-1/2 bg-[#bfc1c9]" style={{ width: "120px" }} />
+    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-gradient-to-b from-[#d8d8de] to-[#c7c7cf]">
 
-      <div className="absolute left-[6%] top-[14%] flex h-[72%] flex-col justify-between">
-        {leftSeats.map((seatId, index) =>
-          renderBench(seatId, `${14 + index * (68 / Math.max(leftSeats.length - 1, 1))}%`, "18%")
-        )}
+      {/* windows */}
+      <div className="absolute top-6 left-8 right-8 flex justify-between opacity-50">
+        {[1, 2, 3].map((w) => (
+          <div
+            key={w}
+            className="w-[240px] h-[70px] rounded-[22px] border-2 border-black/20 bg-[#edf3ff]"
+          />
+        ))}
       </div>
 
-      <div className="absolute right-[6%] top-[14%] flex h-[72%] flex-col justify-between">
-        {rightSeats.map((seatId, index) =>
-          renderBench(seatId, `${14 + index * (68 / Math.max(rightSeats.length - 1, 1))}%`, "82%")
-        )}
+      {/* aisle */}
+      <div className="absolute left-1/2 top-0 h-full w-[110px] -translate-x-1/2 bg-[#b9bbc5]" />
+
+      {/* left seats */}
+      <div className="absolute left-[7%] top-[18%] flex flex-col gap-10">
+        {generatedSeats
+          .slice(0, Math.ceil(generatedSeats.length / 2))
+          .map((seatId) => {
+            const member = getMember(seatId);
+
+            return (
+              <button
+                key={seatId}
+                onClick={() => joinSeat(seatId)}
+                className="w-[320px] h-[110px] rounded-[28px] border-2 border-black bg-[#8f919d] shadow-[0_10px_0_#676873] hover:translate-y-1 hover:shadow-[0_6px_0_#676873] transition-all"
+              >
+                {member ? (
+                  <div className="flex items-center gap-5 p-5">
+                    <Avatar
+                      avatar={member.avatar}
+                      username={member.username}
+                    />
+
+                    <div className="text-left">
+                      <p className="font-black text-lg">
+                        {member.username}
+                      </p>
+
+                      <p className="text-sm opacity-70">
+                        {member.status}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm opacity-40">
+                    empty seat
+                  </div>
+                )}
+              </button>
+            );
+          })}
       </div>
 
-      <div className="absolute left-1/2 bottom-6 -translate-x-1/2 text-sm opacity-50">
-        DeepSpace Metro aisle
+      {/* right seats */}
+      <div className="absolute right-[7%] top-[18%] flex flex-col gap-10">
+        {generatedSeats
+          .slice(Math.ceil(generatedSeats.length / 2))
+          .map((seatId) => {
+            const member = getMember(seatId);
+
+            return (
+              <button
+                key={seatId}
+                onClick={() => joinSeat(seatId)}
+                className="w-[320px] h-[110px] rounded-[28px] border-2 border-black bg-[#8f919d] shadow-[0_10px_0_#676873] hover:translate-y-1 hover:shadow-[0_6px_0_#676873] transition-all"
+              >
+                {member ? (
+                  <div className="flex items-center gap-5 p-5">
+                    <Avatar
+                      avatar={member.avatar}
+                      username={member.username}
+                    />
+
+                    <div className="text-left">
+                      <p className="font-black text-lg">
+                        {member.username}
+                      </p>
+
+                      <p className="text-sm opacity-70">
+                        {member.status}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-sm opacity-40">
+                    empty seat
+                  </div>
+                )}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

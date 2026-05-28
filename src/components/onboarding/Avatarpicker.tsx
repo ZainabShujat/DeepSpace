@@ -6,9 +6,9 @@ interface Props {
 }
 
 const avatars = [
-  "strawberry",
-  "blueberry",
-  "lemon",
+  "/avatars/strawberry.png",
+  "/avatars/blueberry.png",
+  "/avatars/lemon.png",
 ];
 
 export default function AvatarPicker({
@@ -36,7 +36,7 @@ export default function AvatarPicker({
             `}
           >
             <img
-              src={`/avatars/${avatar}.png`}
+              src={avatar}
               alt={avatar}
               className="w-16 h-16 pixelated"
             />

@@ -7,134 +7,90 @@ interface Member {
   username: string;
   avatar: string;
   status: string;
-  seat_id?: string | null;
+  seat_id?: string;
 }
 
 interface Props {
   members: Member[];
   joinSeat: (seatId: string) => void;
+  extraTables?: number;
 }
 
-type TableSeat = {
-  seatId: string;
-  top: string;
-  left: string;
-};
+export default function CafeLayout({
+  members,
+  joinSeat,
+  extraTables = 0,
+}: Props) {
 
-type CafeTable = {
-  tableId: string;
-  top: string;
-  left: string;
-  seatSize: string;
-  seats: TableSeat[];
-};
+  const baseTables = [
+    "cafe-1",
+    "cafe-2",
+    "cafe-3",
+    "cafe-4",
+  ];
 
-const tables: CafeTable[] = [
-  {
-    tableId: "cafe-1",
-    top: "16%",
-    left: "18%",
-    seatSize: "74px",
-    seats: [
-      { seatId: "cafe-1-north", top: "-14%", left: "50%" },
-      { seatId: "cafe-1-south", top: "102%", left: "50%" },
-      { seatId: "cafe-1-west", top: "50%", left: "-14%" },
-      { seatId: "cafe-1-east", top: "50%", left: "102%" },
-    ],
-  },
-  {
-    tableId: "cafe-2",
-    top: "18%",
-    left: "60%",
-    seatSize: "74px",
-    seats: [
-      { seatId: "cafe-2-north", top: "-14%", left: "50%" },
-      { seatId: "cafe-2-south", top: "102%", left: "50%" },
-      { seatId: "cafe-2-west", top: "50%", left: "-14%" },
-      { seatId: "cafe-2-east", top: "50%", left: "102%" },
-    ],
-  },
-  {
-    tableId: "cafe-3",
-    top: "58%",
-    left: "22%",
-    seatSize: "74px",
-    seats: [
-      { seatId: "cafe-3-north", top: "-14%", left: "50%" },
-      { seatId: "cafe-3-south", top: "102%", left: "50%" },
-      { seatId: "cafe-3-west", top: "50%", left: "-14%" },
-      { seatId: "cafe-3-east", top: "50%", left: "102%" },
-    ],
-  },
-  {
-    tableId: "cafe-4",
-    top: "60%",
-    left: "62%",
-    seatSize: "74px",
-    seats: [
-      { seatId: "cafe-4-north", top: "-14%", left: "50%" },
-      { seatId: "cafe-4-south", top: "102%", left: "50%" },
-      { seatId: "cafe-4-west", top: "50%", left: "-14%" },
-      { seatId: "cafe-4-east", top: "50%", left: "102%" },
-    ],
-  },
-];
+  const generatedTables = [
+    ...baseTables,
+    ...Array.from(
+      { length: extraTables },
+      (_, i) => `extra-cafe-${i}`
+    ),
+  ];
 
-export default function CafeLayout({ members, joinSeat }: Props) {
-  const getMember = (seatId: string, fallbackIndex: number) =>
-    members.find((member) => member.seat_id === seatId) || members[fallbackIndex];
+  const positions = [
+    { top: "12%", left: "10%" },
+    { top: "18%", right: "12%" },
+    { bottom: "15%", left: "18%" },
+    { bottom: "12%", right: "18%" },
+  ];
+
+  const getMember = (seatId: string) =>
+    members.find(
+      (m) => m.seat_id === seatId
+    );
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-[40px] border-2 border-black bg-[#f3e7c9]"
-      style={{ height: "700px" }}
-    >
-      <div
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-        }}
-      />
+    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-[#f3e4c7]">
 
-      <div className="absolute left-5 top-5 text-xs uppercase tracking-[0.4em] text-[#6b2d00]/60">
-        Cafe seating
-      </div>
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] bg-[size:24px_24px]" />
 
-      {tables.map((table, tableIndex) => (
-        <div key={table.tableId} className="absolute" style={{ top: table.top, left: table.left }}>
-          <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[6px] border-[#6b2d00] bg-[#c35a00] shadow-xl"
-            style={{ width: table.seatSize, height: table.seatSize }}
-          />
+      {generatedTables.map((tableId, index) => {
 
-          {table.seats.map((seat, seatIndex) => {
-            const member = getMember(seat.seatId, tableIndex * 4 + seatIndex);
+        const member = getMember(tableId);
 
-            return (
-              <button
-                key={seat.seatId}
-                onClick={() => joinSeat(seat.seatId)}
-                className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#6b2d00] bg-[#fff6e5] shadow-md flex items-center justify-center"
-                style={{
-                  top: seat.top,
-                  left: seat.left,
-                  width: "64px",
-                  height: "64px",
-                }}
-              >
-                {member ? (
-                  <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold text-[#43210f]" style={{ backgroundColor: "#fff" }}>
-                    <Avatar avatar={member.avatar} username={member.username} />
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-bold text-[#6b2d00]">+</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      ))}
+        const pos =
+          positions[index % positions.length];
+
+        return (
+          <button
+            key={tableId}
+            onClick={() => joinSeat(tableId)}
+            style={pos}
+            className="absolute w-[240px] h-[240px] rounded-full border-[8px] border-[#6b2e00] bg-[#ba5a00] shadow-xl hover:scale-[1.02] transition-all"
+          >
+            {member ? (
+              <div className="flex h-full flex-col items-center justify-center">
+                <Avatar
+                  avatar={member.avatar}
+                  username={member.username}
+                />
+
+                <p className="mt-4 font-black text-lg">
+                  {member.username}
+                </p>
+
+                <p className="text-sm opacity-70">
+                  {member.status}
+                </p>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm opacity-40">
+                empty table
+              </div>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
