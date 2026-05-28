@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { createClient } from "../../../../lib/supabase/client";
-import MemberCard from "@/components/room/MemberCard";
-import { roomThemes } from "@/lib/roomThemes";
+
+import LibraryLayout from "../../../components/layouts/LibraryLayout";
+import MetroLayout from "../../../components/layouts/MetroLayout";
+import CafeLayout from "../../../components/layouts/CafeLayout";
 
 interface Props {
   params: Promise<{
@@ -85,18 +88,6 @@ export default function RoomPage({ params }: Props) {
     }
   };
 
-  const updateStatus = async (
-    memberId: string,
-    status: string
-  ) => {
-    await supabase
-      .from("room_members")
-      .update({ status })
-      .eq("id", memberId);
-
-    fetchMembers(roomId);
-  };
-
   const fetchRoom = async (id: string) => {
     const { data } = await supabase
       .from("rooms")
@@ -110,59 +101,35 @@ export default function RoomPage({ params }: Props) {
     }
   };
 
-  const seatPositions = [
-    { top: "20%", left: "15%" },
-    { top: "35%", left: "40%" },
-    { top: "50%", left: "70%" },
-    { top: "65%", left: "25%" },
-    { top: "25%", left: "75%" },
-  ];
-
   return (
-    <main className="min-h-screen p-10">
-      <h1 className="text-5xl font-bold mb-2">
-        {roomName || "DeepSpace"}
-      </h1>
+    <main className="min-h-screen p-10 bg-[#f8f8f8]">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-5xl font-bold mb-2">
+            {roomName || "DeepSpace"}
+          </h1>
 
-      <div className="flex items-center gap-3 mb-10">
-        <p className="opacity-60">
-          {roomId}
-        </p>
-
-        <div className="px-3 py-1 rounded-full border text-sm capitalize bg-white">
-          {roomType}
+          <p className="opacity-60 capitalize">
+            {roomType}
+          </p>
         </div>
+
+        <button className="border rounded-xl px-5 py-3 bg-white hover:bg-gray-100 transition">
+          Share Code
+        </button>
       </div>
 
-      <div
-        className={`relative w-full h-[600px] border rounded-3xl overflow-hidden ${
-          roomThemes[roomType] || "bg-gray-100"
-        }`}
-      >
-        {members.map((member, index) => {
-          const position =
-            seatPositions[index % seatPositions.length];
+      {roomType === "library" && (
+        <LibraryLayout members={members} />
+      )}
 
-          return (
-            <div
-              key={member.id}
-              className="absolute transition-all duration-500"
-              style={{
-                top: position.top,
-                left: position.left,
-              }}
-            >
-              <MemberCard
-                member={member}
-                isCurrentUser={
-                  member.username === "Zuzu"
-                }
-                updateStatus={updateStatus}
-              />
-            </div>
-          );
-        })}
-      </div>
+      {roomType === "metro" && (
+        <MetroLayout members={members} />
+      )}
+
+      {roomType === "cafe" && (
+        <CafeLayout members={members} />
+      )}
     </main>
   );
 }
