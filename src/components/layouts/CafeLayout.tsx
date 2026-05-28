@@ -1,73 +1,120 @@
-interface Member {
-  id: string;
-  username: string;
-  status: string;
-}
+"use client";
+
+import Avatar from "../room/Avatar";
 
 interface Props {
-  members: Member[];
+  members: any[];
+  joinSeat: (seatId: string) => void;
 }
-
-const cafeSeats = [
-  { top: "25%", left: "20%" },
-  { top: "25%", left: "70%" },
-
-  { top: "55%", left: "20%" },
-  { top: "55%", left: "70%" },
-];
 
 export default function CafeLayout({
   members,
+  joinSeat,
 }: Props) {
+
+  const tables = [
+    {
+      id: "table-1",
+      top: "15%",
+      left: "10%",
+    },
+    {
+      id: "table-2",
+      top: "55%",
+      left: "55%",
+    },
+  ];
+
   return (
-    <div className="relative w-full h-[700px] rounded-3xl overflow-hidden border bg-[#efe3d3]">
+    <div className="
+      relative
+      w-full
+      h-[700px]
+      overflow-hidden
+      rounded-[40px]
+      border
+      bg-[#f3e7c0]
+    ">
 
-      {/* LEFT TABLE */}
-      <div className="absolute top-[20%] left-[15%] w-36 h-36 rounded-full border-4 bg-[#c49a6c]" />
+      <div className="
+        absolute
+        inset-0
+        opacity-10
+        bg-[radial-gradient(#000_1px,transparent_1px)]
+        [background-size:24px_24px]
+      " />
 
-      {/* RIGHT TABLE */}
-      <div className="absolute top-[20%] right-[15%] w-36 h-36 rounded-full border-4 bg-[#c49a6c]" />
+      {tables.map((table) => {
 
-      {/* BOTTOM LEFT */}
-      <div className="absolute bottom-[15%] left-[15%] w-36 h-36 rounded-full border-4 bg-[#c49a6c]" />
-
-      {/* BOTTOM RIGHT */}
-      <div className="absolute bottom-[15%] right-[15%] w-36 h-36 rounded-full border-4 bg-[#c49a6c]" />
-
-      {/* SHARE CODE */}
-      <button className="absolute top-6 right-6 border rounded-xl px-4 py-2 bg-white">
-        Share Code
-      </button>
-
-      {/* ADD TABLE */}
-      <button className="absolute top-[45%] left-[43%] border rounded-xl px-4 py-3 bg-white">
-        Add Table +
-      </button>
-
-      {/* MEMBERS */}
-      {members.map((member, index) => {
-        const position =
-          cafeSeats[index % cafeSeats.length];
+        const seatedUser =
+          members.find(
+            (member) =>
+              member.seat_id === table.id
+          );
 
         return (
-          <div
-            key={member.id}
-            className="absolute transition-all duration-500"
+          <button
+            key={table.id}
+            onClick={() =>
+              joinSeat(table.id)
+            }
+            className="
+              absolute
+              w-[240px]
+              h-[240px]
+              rounded-full
+              bg-[#c25b00]
+              border-[6px]
+              border-[#8f3f00]
+              shadow-lg
+              hover:scale-[1.02]
+              transition-all
+            "
             style={{
-              top: position.top,
-              left: position.left,
+              top: table.top,
+              left: table.left,
             }}
           >
-            <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
-              {member.username.charAt(0)}
-            </div>
 
-            <p className="text-center mt-2 text-sm">
-              {member.username}
-            </p>
-          </div>
+            {seatedUser && (
+
+              <div className="
+                absolute
+                inset-0
+                flex
+                items-center
+                justify-center
+              ">
+
+                <div className="
+                  flex
+                  flex-col
+                  items-center
+                ">
+
+                  <Avatar
+                    avatar={seatedUser.avatar}
+                    username={seatedUser.username}
+                  />
+
+                  <p className="mt-2 font-semibold">
+                    {seatedUser.username}
+                  </p>
+
+                  <p className="text-sm opacity-70">
+                    {seatedUser.status}
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </button>
         );
       })}
+
     </div>
   );
 }

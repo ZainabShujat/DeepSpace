@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 
 import { createClient } from "../../../../lib/supabase/client";
 
-import LibraryLayout from "../../../components/layouts/LibraryLayout";
-import MetroLayout from "../../../components/layouts/MetroLayout";
-import CafeLayout from "../../../components/layouts/CafeLayout";
+import MetroLayout from "@/components/layouts/MetroLayout";
+import CafeLayout from "@/components/layouts/CafeLayout";
+import LibraryLayout from "@/components/layouts/LibraryLayout";
 
 interface Props {
   params: Promise<{
@@ -18,32 +18,72 @@ interface Member {
   id: string;
   username: string;
   status: string;
+  avatar: string;
+  seat_id: string;
 }
 
-export default function RoomPage({ params }: Props) {
+interface Room {
+  id: string;
+  name: string;
+  layout: string;
+  share_code: string;
+}
+
+export default function RoomPage({
+  params,
+}: Props) {
+
   const supabase = createClient();
 
   const [roomId, setRoomId] = useState("");
-  const [roomName, setRoomName] = useState("");
-  const [roomType, setRoomType] = useState("");
+  const [room, setRoom] = useState<Room | null>(null);
+
   const [members, setMembers] = useState<Member[]>([]);
 
+  const [username, setUsername] =
+    useState("");
+
+  const [avatar, setAvatar] =
+    useState("");
+
   useEffect(() => {
+
     let interval: NodeJS.Timeout;
 
     const initialize = async () => {
-      const resolvedParams = await params;
+
+      const resolvedParams =
+        await params;
+
       const id = resolvedParams.id;
 
       setRoomId(id);
 
+      const savedUsername =
+        localStorage.getItem("username")
+        || "guest";
+
+      const savedAvatar =
+        localStorage.getItem("avatar")
+        || "strawberry";
+
+      setUsername(savedUsername);
+      setAvatar(savedAvatar);
+
       await fetchRoom(id);
-      await joinRoom(id);
+
+      await joinRoom(
+        id,
+        savedUsername,
+        savedAvatar
+      );
+
       await fetchMembers(id);
 
       interval = setInterval(() => {
         fetchMembers(id);
       }, 2000);
+
     };
 
     initialize();
@@ -53,31 +93,62 @@ export default function RoomPage({ params }: Props) {
         clearInterval(interval);
       }
     };
+
   }, []);
 
-  const joinRoom = async (id: string) => {
-    const { data: existing } = await supabase
-      .from("room_members")
-      .select("*")
-      .eq("room_id", id)
-      .eq("username", "Zuzu");
+  const fetchRoom = async (
+    id: string
+  ) => {
 
-    if (existing && existing.length > 0) {
+    const { data } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (data) {
+      setRoom(data);
+    }
+
+  };
+
+  const joinRoom = async (
+    id: string,
+    currentUsername: string,
+    currentAvatar: string
+  ) => {
+
+    const { data: existing } =
+      await supabase
+        .from("room_members")
+        .select("*")
+        .eq("room_id", id)
+        .eq("username", currentUsername);
+
+    if (
+      existing &&
+      existing.length > 0
+    ) {
       return;
     }
 
-    await supabase.from("room_members").insert([
-      {
-        room_id: id,
-        username: "Zuzu",
-        avatar: "default",
-        status: "arrived",
-        seat_position: Math.floor(Math.random() * 20),
-      },
-    ]);
+    await supabase
+      .from("room_members")
+      .insert([
+        {
+          room_id: id,
+          username: currentUsername,
+          avatar: currentAvatar,
+          status: "just arrived",
+        },
+      ]);
+
   };
 
-  const fetchMembers = async (id: string) => {
+  const fetchMembers = async (
+    id: string
+  ) => {
+
     const { data } = await supabase
       .from("room_members")
       .select("*")
@@ -86,50 +157,111 @@ export default function RoomPage({ params }: Props) {
     if (data) {
       setMembers(data);
     }
+
   };
 
-  const fetchRoom = async (id: string) => {
-    const { data } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("id", id)
-      .single();
+  const joinSeat = async (
+    seatId: string
+  ) => {
 
-    if (data) {
-      setRoomType(data.type);
-      setRoomName(data.name);
+    await supabase
+      .from("room_members")
+      .update({
+        seat_id: seatId,
+      })
+      .eq("room_id", roomId)
+      .eq("username", username);
+
+    fetchMembers(roomId);
+
+  };
+
+  const copyCode = async () => {
+
+    if (!room?.share_code) return;
+
+    await navigator.clipboard.writeText(
+      room.share_code
+    );
+
+    alert("Code copied!");
+
+  };
+
+  const renderLayout = () => {
+
+    if (!room) return null;
+
+    switch (room.layout) {
+
+      case "metro":
+        return (
+          <MetroLayout
+            members={members}
+            joinSeat={joinSeat}
+          />
+        );
+
+      case "cafe":
+        return (
+          <CafeLayout
+            members={members}
+            joinSeat={joinSeat}
+          />
+        );
+
+      case "library":
+        return (
+          <LibraryLayout
+            members={members}
+            joinSeat={joinSeat}
+          />
+        );
+
+      default:
+        return null;
+
     }
+
   };
 
   return (
-    <main className="min-h-screen p-10 bg-[#f8f8f8]">
-      <div className="flex items-center justify-between mb-8">
+    <main className="min-h-screen p-8 bg-[#f6f6f7]">
+
+      <div className="flex items-start justify-between mb-8">
+
         <div>
-          <h1 className="text-5xl font-bold mb-2">
-            {roomName || "DeepSpace"}
+
+          <h1 className="text-6xl font-bold">
+            {room?.name}
           </h1>
 
-          <p className="opacity-60 capitalize">
-            {roomType}
+          <p className="text-2xl opacity-50 mt-2 capitalize">
+            {room?.layout}
           </p>
+
         </div>
 
-        <button className="border rounded-xl px-5 py-3 bg-white hover:bg-gray-100 transition">
+        <button
+          onClick={copyCode}
+          className="
+            border
+            rounded-2xl
+            px-8
+            py-4
+            bg-white
+            shadow-sm
+            hover:scale-[1.02]
+            transition-all
+          "
+        >
           Share Code
         </button>
+
       </div>
 
-      {roomType === "library" && (
-        <LibraryLayout members={members} />
-      )}
+      {renderLayout()}
 
-      {roomType === "metro" && (
-        <MetroLayout members={members} />
-      )}
-
-      {roomType === "cafe" && (
-        <CafeLayout members={members} />
-      )}
     </main>
   );
 }

@@ -24,7 +24,7 @@ export default function OnboardingPage() {
       })
     );
 
-    router.push("/");
+    router.push("/lobby");
   };
 
   return (

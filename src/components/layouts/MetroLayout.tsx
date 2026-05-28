@@ -1,72 +1,182 @@
-interface Member {
-  id: string;
-  username: string;
-  status: string;
-}
+
+"use client";
+
+import Avatar from "../room/Avatar";
 
 interface Props {
-  members: Member[];
+  members: any[];
+  joinSeat: (seatId: string) => void;
 }
-
-const metroSeats = [
-  { top: "20%", left: "22%" },
-  { top: "30%", left: "30%" },
-  { top: "40%", left: "38%" },
-
-  { top: "20%", left: "62%" },
-  { top: "30%", left: "70%" },
-  { top: "40%", left: "78%" },
-];
 
 export default function MetroLayout({
   members,
+  joinSeat,
 }: Props) {
+
+  const seats = [
+    {
+      id: "seat-1",
+      top: "18%",
+      left: "6%",
+    },
+    {
+      id: "seat-2",
+      top: "18%",
+      left: "37%",
+    },
+    {
+      id: "seat-3",
+      top: "18%",
+      left: "68%",
+    },
+  ];
+
   return (
-    <div className="relative w-full h-[700px] rounded-3xl overflow-hidden border bg-[#d9dde2]">
 
-      {/* LEFT BENCH */}
-      <div className="absolute top-[15%] left-[10%] w-[28%] h-[55%] border-2 rounded-3xl rotate-[-12deg] bg-[#9ea7b3]" />
+    <div className="
+      relative
+      w-full
+      h-[700px]
+      overflow-hidden
+      rounded-[40px]
+      border
+      bg-gradient-to-b
+      from-[#d9d9df]
+      to-[#cfcfd8]
+    ">
 
-      {/* RIGHT BENCH */}
-      <div className="absolute top-[15%] right-[10%] w-[28%] h-[55%] border-2 rounded-3xl rotate-[12deg] bg-[#9ea7b3]" />
+      <div className="
+        absolute
+        left-1/2
+        top-0
+        h-full
+        w-[80px]
+        -translate-x-1/2
+        bg-[#d7d7dc]
+      " />
 
-      {/* AISLE */}
-      <div className="absolute top-0 left-[47%] w-[6%] h-full bg-[#c6ccd4]" />
+      <div className="
+        absolute
+        left-1/2
+        top-0
+        h-full
+        w-[6px]
+        -translate-x-[20px]
+        bg-[#b8b8bf]
+      " />
 
-      {/* SHARE CODE */}
-      <button className="absolute top-6 right-6 border rounded-xl px-4 py-2 bg-white">
-        Share Code
-      </button>
+      <div className="
+        absolute
+        left-1/2
+        top-0
+        h-full
+        w-[6px]
+        translate-x-[14px]
+        bg-[#b8b8bf]
+      " />
 
-      {/* ADD SEATS */}
-      <button className="absolute bottom-8 right-8 border rounded-xl px-4 py-3 bg-white">
-        Add Seats +
-      </button>
+      {seats.map((seat) => {
 
-      {/* MEMBERS */}
-      {members.map((member, index) => {
-        const position =
-          metroSeats[index % metroSeats.length];
+        const seatedUser =
+          members.find(
+            (member) =>
+              member.seat_id === seat.id
+          );
 
         return (
-          <div
-            key={member.id}
-            className="absolute transition-all duration-500"
+
+          <button
+            key={seat.id}
+            onClick={() =>
+              joinSeat(seat.id)
+            }
+            className="
+              absolute
+              w-[280px]
+              h-[140px]
+              rounded-[28px]
+              border
+              border-black/20
+              bg-[#a9a9b5]
+              shadow-md
+              transition-all
+              hover:scale-[1.02]
+            "
             style={{
-              top: position.top,
-              left: position.left,
+              top: seat.top,
+              left: seat.left,
             }}
           >
-            <div className="w-16 h-16 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
-              {member.username.charAt(0)}
-            </div>
 
-            <p className="text-center mt-2 text-sm">
-              {member.username}
-            </p>
-          </div>
+            <div className="
+              absolute
+              inset-x-0
+              top-0
+              h-[18px]
+              rounded-t-[28px]
+              bg-black/10
+            " />
+
+            {seatedUser && (
+
+              <div className="
+                absolute
+                inset-0
+                flex
+                items-center
+                justify-center
+              ">
+
+                <div className="
+                  flex
+                  flex-col
+                  items-center
+                ">
+
+                  <Avatar
+                    avatar={seatedUser.avatar}
+                    username={seatedUser.username}
+                  />
+
+                  <p className="
+                    mt-2
+                    text-sm
+                    font-semibold
+                  ">
+                    {seatedUser.username}
+                  </p>
+
+                  <p className="
+                    text-xs
+                    opacity-60
+                  ">
+                    {seatedUser.status}
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </button>
+
         );
+
       })}
+
+      <div className="
+        absolute
+        bottom-4
+        left-1/2
+        -translate-x-1/2
+        text-xs
+        opacity-40
+      ">
+        DeepSpace Metro
+      </div>
+
     </div>
+
   );
 }
