@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../lib/supabase/client";
+import MemberCard from "@/components/room/MemberCard";
+import { roomThemes } from "@/lib/roomThemes";
 
 interface Props {
   params: Promise<{
@@ -19,6 +21,8 @@ export default function RoomPage({ params }: Props) {
   const supabase = createClient();
 
   const [roomId, setRoomId] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [roomType, setRoomType] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export default function RoomPage({ params }: Props) {
 
       setRoomId(id);
 
+      await fetchRoom(id);
       await joinRoom(id);
       await fetchMembers(id);
 
@@ -63,7 +68,7 @@ export default function RoomPage({ params }: Props) {
         room_id: id,
         username: "Zuzu",
         avatar: "default",
-        status: "focused",
+        status: "arrived",
         seat_position: Math.floor(Math.random() * 20),
       },
     ]);
@@ -80,6 +85,31 @@ export default function RoomPage({ params }: Props) {
     }
   };
 
+  const updateStatus = async (
+    memberId: string,
+    status: string
+  ) => {
+    await supabase
+      .from("room_members")
+      .update({ status })
+      .eq("id", memberId);
+
+    fetchMembers(roomId);
+  };
+
+  const fetchRoom = async (id: string) => {
+    const { data } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (data) {
+      setRoomType(data.type);
+      setRoomName(data.name);
+    }
+  };
+
   const seatPositions = [
     { top: "20%", left: "15%" },
     { top: "35%", left: "40%" },
@@ -90,15 +120,25 @@ export default function RoomPage({ params }: Props) {
 
   return (
     <main className="min-h-screen p-10">
-      <h1 className="text-4xl font-bold mb-2">
-        DeepSpace Room
+      <h1 className="text-5xl font-bold mb-2">
+        {roomName || "DeepSpace"}
       </h1>
 
-      <p className="opacity-60 mb-10">
-        {roomId}
-      </p>
+      <div className="flex items-center gap-3 mb-10">
+        <p className="opacity-60">
+          {roomId}
+        </p>
 
-      <div className="relative w-full h-[600px] border rounded-3xl overflow-hidden bg-gray-100">
+        <div className="px-3 py-1 rounded-full border text-sm capitalize bg-white">
+          {roomType}
+        </div>
+      </div>
+
+      <div
+        className={`relative w-full h-[600px] border rounded-3xl overflow-hidden ${
+          roomThemes[roomType] || "bg-gray-100"
+        }`}
+      >
         {members.map((member, index) => {
           const position =
             seatPositions[index % seatPositions.length];
@@ -112,15 +152,13 @@ export default function RoomPage({ params }: Props) {
                 left: position.left,
               }}
             >
-              <div className="border rounded-2xl px-6 py-4 bg-white shadow-md">
-                <h2 className="text-lg font-semibold">
-                  {member.username}
-                </h2>
-
-                <p className="opacity-70 text-sm">
-                  {member.status}
-                </p>
-              </div>
+              <MemberCard
+                member={member}
+                isCurrentUser={
+                  member.username === "Zuzu"
+                }
+                updateStatus={updateStatus}
+              />
             </div>
           );
         })}
