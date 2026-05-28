@@ -2,77 +2,54 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import createClient from "@/lib/supabase/client";
 
 export default function LoginPage() {
 
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [username, setUsername] =
-    useState("");
+  const handleLogin = async () => {
+    if (!email || !password) return;
 
-  const handleLogin = () => {
+    const supabase = createClient();
 
-    if (!username) return;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    localStorage.setItem(
-      "username",
-      username
-    );
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
-    router.push("/onboarding");
-
+    router.push("/lobby");
   };
 
   return (
-    <main className="
-      min-h-screen
-      flex
-      items-center
-      justify-center
-      bg-neutral-100
-    ">
+    <main className="min-h-screen flex items-center justify-center bg-neutral-100">
 
-      <div className="
-        w-[400px]
-        rounded-[32px]
-        border
-        bg-white
-        p-10
-      ">
+      <div className="w-[400px] rounded-[32px] border bg-white p-10">
 
-        <h1 className="
-          text-4xl
-          font-bold
-          mb-8
-        ">
-          Login
-        </h1>
+        <h1 className="text-4xl font-bold mb-8">Login</h1>
 
         <input
-          value={username}
-          onChange={(e) =>
-            setUsername(e.target.value)
-          }
-          placeholder="username"
-          className="
-            w-full
-            border
-            rounded-2xl
-            px-4
-            py-4
-            mb-6
-          "
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email"
+          className="w-full border rounded-2xl px-4 py-4 mb-4"
+        />
+
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="password"
+          type="password"
+          className="w-full border rounded-2xl px-4 py-4 mb-6"
         />
 
         <button
           onClick={handleLogin}
-          className="
-            w-full
-            rounded-2xl
-            bg-black
-            py-4
-            text-white
-          "
+          className="w-full rounded-2xl bg-black py-4 text-white"
         >
           Continue
         </button>

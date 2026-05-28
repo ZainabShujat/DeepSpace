@@ -6,6 +6,8 @@ export default function GuestPage() {
   const router = useRouter();
 
   const continueGuest = () => {
+    // set a cookie so middleware can allow guest access
+    document.cookie = "deepspace-guest=true; path=/; max-age=86400";
     localStorage.setItem("isGuest", "true");
 
     router.push("/onboarding");

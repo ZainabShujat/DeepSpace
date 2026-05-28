@@ -10,37 +10,34 @@ export default function CreateRoom() {
   const [type, setType] = useState("metro");
 
   const createRoom = async () => {
-    const inviteCode = Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase();
+    const shareCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const { data, error } = await supabase
       .from("rooms")
       .insert([
         {
           name,
-          type,
+          layout: type,
           visibility: "public",
           mode: "endless",
-          invite_code: inviteCode,
+          invite_code: shareCode,
+          share_code: shareCode,
         },
       ])
       .select();
 
-    console.log(data, error);
-
-    if (!error) {
-      alert("Room created!");
-      setName("");
+    if (!error && data && data[0]) {
+      const room = data[0];
+      window.location.href = `/room/${room.id}`;
+    } else {
+      console.error(error);
+      alert("Could not create room");
     }
   };
 
   return (
     <div className="flex flex-col gap-4 p-6 border rounded-2xl w-[350px]">
-      <h2 className="text-2xl font-semibold">
-        Create Room
-      </h2>
+      <h2 className="text-2xl font-semibold">Create Room</h2>
 
       <input
         className="border rounded-lg p-3"
@@ -59,10 +56,7 @@ export default function CreateRoom() {
         <option value="library">Library</option>
       </select>
 
-      <button
-        onClick={createRoom}
-        className="bg-black text-white rounded-lg p-3"
-      >
+      <button onClick={createRoom} className="bg-black text-white rounded-lg p-3">
         Create
       </button>
     </div>

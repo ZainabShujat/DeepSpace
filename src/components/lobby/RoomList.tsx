@@ -7,7 +7,7 @@ import { createClient } from "../../../lib/supabase/client";
 interface Room {
   id: string;
   name: string;
-  type: string;
+  layout: string;
   visibility: string;
 }
 
@@ -70,7 +70,7 @@ export default function RoomList() {
             </h3>
 
             <p className="text-sm opacity-70">
-              {room.type} • {room.visibility}
+              {room.layout} • {room.visibility}
             </p>
           </div>
         </Link>

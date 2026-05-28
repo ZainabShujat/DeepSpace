@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import UsernameForm from "@/components/onboarding/Usernameform";
 import AvatarPicker from "@/components/onboarding/Avatarpicker";
+import upsertProfile from "@/lib/supabase/profile";
+import createClient from "@/lib/supabase/client";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -16,15 +18,32 @@ export default function OnboardingPage() {
   const handleContinue = () => {
     if (!username.trim()) return;
 
-    localStorage.setItem(
-      "deepspace-user",
-      JSON.stringify({
-        username,
-        avatar: selectedAvatar,
-      })
-    );
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        const userId = data?.session?.user?.id;
 
-    router.push("/lobby");
+        if (userId) {
+          await upsertProfile({ id: userId, username, avatar: selectedAvatar });
+          localStorage.setItem("isGuest", "false");
+        } else {
+          // Guest mode: persist identity locally and continue without auth.
+          localStorage.setItem("isGuest", "true");
+          localStorage.setItem("username", username);
+          localStorage.setItem("avatar", selectedAvatar);
+          document.cookie = "deepspace-guest=true; path=/; max-age=86400";
+        }
+
+        localStorage.setItem("username", username);
+        localStorage.setItem("avatar", selectedAvatar);
+
+        router.push("/lobby");
+      } catch (e) {
+        console.error(e);
+        alert("Unable to save profile");
+      }
+    })();
   };
 
   return (

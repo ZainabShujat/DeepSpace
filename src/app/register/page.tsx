@@ -2,18 +2,40 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import createClient from "@/lib/supabase/client";
+import upsertProfile from "@/lib/supabase/profile";
 
 export default function RegisterPage() {
 
 	const router = useRouter();
 
-	const [username, setUsername] = useState("");
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 
-	const handleRegister = () => {
-		if (!username) return;
+	const handleRegister = async () => {
+		if (!email || !password) return;
 
-		localStorage.setItem("username", username);
+		const supabase = createClient();
 
+		const { data, error } = await supabase.auth.signUp({ email, password });
+
+		if (error) {
+			alert(error.message);
+			return;
+		}
+
+		// if a user id is returned (no email confirm required), create an empty profile
+		const userId = data?.user?.id;
+
+		if (userId) {
+			try {
+				await upsertProfile({ id: userId, username: undefined, avatar: "strawberry" });
+			} catch (e) {
+				console.error(e);
+			}
+		}
+
+		// redirect to onboarding to finish username/avatar
 		router.push("/onboarding");
 	};
 
@@ -25,9 +47,17 @@ export default function RegisterPage() {
 				<h1 className="text-4xl font-bold mb-8">Register</h1>
 
 				<input
-					value={username}
-					onChange={(e) => setUsername(e.target.value)}
-					placeholder="username"
+					value={email}
+					onChange={(e) => setEmail(e.target.value)}
+					placeholder="email"
+					className="w-full border rounded-2xl px-4 py-4 mb-4"
+				/>
+
+				<input
+					value={password}
+					onChange={(e) => setPassword(e.target.value)}
+					placeholder="password"
+					type="password"
 					className="w-full border rounded-2xl px-4 py-4 mb-6"
 				/>
 
@@ -35,7 +65,7 @@ export default function RegisterPage() {
 					onClick={handleRegister}
 					className="w-full rounded-2xl bg-black py-4 text-white"
 				>
-					Continue
+					Create account
 				</button>
 
 			</div>

@@ -17,7 +17,7 @@ export default function MemberCard({
   updateStatus,
 }: MemberCardProps) {
   return (
-    <div className="border rounded-2xl px-6 py-4 bg-white shadow-md min-w-[170px]">
+    <div className="border rounded-2xl px-6 py-4 bg-white shadow-md" style={{ width: "170px" }}>
       <h2 className="text-lg font-semibold">
         {member.username}
       </h2>
@@ -30,11 +30,11 @@ export default function MemberCard({
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() =>
-              updateStatus(member.id, "arrived")
+              updateStatus(member.id, "on arrival")
             }
             className="text-xs border px-2 py-1 rounded-lg hover:bg-gray-100"
           >
-            Arrived
+            On arrival
           </button>
 
           <button
@@ -43,7 +43,7 @@ export default function MemberCard({
             }
             className="text-xs border px-2 py-1 rounded-lg hover:bg-gray-100"
           >
-            Focus
+            Focused
           </button>
 
           <button
@@ -52,7 +52,7 @@ export default function MemberCard({
             }
             className="text-xs border px-2 py-1 rounded-lg hover:bg-gray-100"
           >
-            Break
+            On break
           </button>
         </div>
       )}

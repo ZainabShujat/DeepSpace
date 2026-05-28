@@ -1,19 +1,42 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import CreateRoom from "@/components/lobby/createroom";
 import RoomList from "@/components/lobby/RoomList";
+import createClient from "@/lib/supabase/client";
 
 export default function LobbyPage() {
 
-  const username =
-    typeof window !== "undefined"
-      ? localStorage.getItem("username")
-      : "";
+  const [username, setUsername] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
 
-  const avatar =
-    typeof window !== "undefined"
-      ? localStorage.getItem("avatar")
-      : "";
+  useEffect(() => {
+    const loadProfile = async () => {
+      const supabase = createClient();
+
+      const { data } = await supabase.auth.getSession();
+
+      const userId = data?.session?.user?.id;
+
+      if (userId) {
+        const { data: profile } = await supabase.from("profiles").select("username, avatar").eq("id", userId).single();
+
+        if (profile) {
+          setUsername(profile.username || data?.session?.user?.email || "");
+          setAvatar(profile.avatar || "/avatars/strawberry.png");
+          return;
+        }
+      }
+
+      // guest fallback
+      const guestName = typeof window !== "undefined" ? localStorage.getItem("username") : null;
+      const guestAvatar = typeof window !== "undefined" ? localStorage.getItem("avatar") : null;
+      setUsername(guestName);
+      setAvatar(guestAvatar);
+    };
+
+    loadProfile();
+  }, []);
 
   return (
     <main className="
@@ -96,8 +119,16 @@ export default function LobbyPage() {
             </div>
 
             <button
-              onClick={() => {
+              onClick={async () => {
+                const supabase = createClient();
+
+                // if logged-in, sign out via Supabase
+                await supabase.auth.signOut();
+
+                // clear guest cookie and local storage
+                document.cookie = "deepspace-guest=; path=/; max-age=0";
                 localStorage.clear();
+
                 window.location.href = "/";
               }}
               className="
