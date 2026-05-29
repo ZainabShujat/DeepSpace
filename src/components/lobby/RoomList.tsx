@@ -16,6 +16,17 @@ export default function RoomList() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
 
+  const fetchRooms = async () => {
+    const { data, error } = await supabase
+      .from("rooms")
+      .select("*")
+      .eq("visibility", "public");
+
+    if (!error && data) {
+      setRooms(data);
+    }
+  };
+
   useEffect(() => {
     fetchRooms();
 
@@ -42,17 +53,6 @@ export default function RoomList() {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  const fetchRooms = async () => {
-    const { data, error } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("visibility", "public");
-
-    if (!error && data) {
-      setRooms(data);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4 w-87.5">

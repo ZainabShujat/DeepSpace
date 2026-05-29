@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { createClient } from "../../../../lib/supabase/client";
+import createClient from "@/lib/supabase/client";
 
 import MetroLayout from "../../../components/layouts/MetroLayout";
 import CafeLayout from "../../../components/layouts/CafeLayout";
@@ -25,8 +25,13 @@ interface Room {
   layout?: string | null;
   type?: string | null;
   room_type?: string | null;
+  visibility?: string | null;
   share_code?: string | null;
+  invite_code?: string | null;
+  join_code?: string | null;
   max_members?: number | null;
+  owner_id?: string | null;
+  owner_username?: string | null;
 }
 
 const SEAT_SETS: Record<string, string[]> = {
@@ -54,8 +59,6 @@ export default function RoomPage({ params }: Props) {
   const [room, setRoom] = useState<Room | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [username, setUsername] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -124,18 +127,17 @@ export default function RoomPage({ params }: Props) {
       const savedAvatar = localStorage.getItem("avatar") || null;
 
       // detect current user id for auth users
+      let currentSessionUserId: string | null = null;
       try {
         const sess = await supabase.auth.getSession();
-        const uid = sess?.data?.session?.user?.id || null;
-        setCurrentUserId(uid);
+        currentSessionUserId = sess?.data?.session?.user?.id || null;
       } catch (err) {
-        setCurrentUserId(null);
+        currentSessionUserId = null;
       }
 
       setUsername(savedUsername);
-      setAvatar(savedAvatar || "");
 
-      await fetchRoom(id);
+      const initialRoom = await fetchRoom(id);
 
       // if a session is already active, bootstrap it immediately
       const { data: activeSession } = await supabase
@@ -156,16 +158,23 @@ export default function RoomPage({ params }: Props) {
         timerRef.current = window.setInterval(() => setTimerSeconds((s) => s + 1), 1000);
       }
 
-      const roomRes = await supabase.from("rooms").select("visibility").eq("id", id).single();
-      if (roomRes.data?.visibility === "private") {
-        const { data: existing } = await supabase
-          .from("room_members")
-          .select("*")
-          .eq("room_id", id)
-          .eq("username", savedUsername);
+      const { data: existing } = await supabase
+        .from("room_members")
+        .select("*")
+        .eq("room_id", id)
+        .eq("username", savedUsername);
 
+      if (initialRoom?.visibility === "private") {
         if (!existing || existing.length === 0) {
           window.location.href = "/";
+          return;
+        }
+      }
+
+      if (activeSession && (!existing || existing.length === 0)) {
+        const shouldEnter = window.confirm("This room is currently in an active focus session. Enter anyway?");
+        if (!shouldEnter) {
+          window.location.href = "/lobby";
           return;
         }
       }
@@ -173,14 +182,12 @@ export default function RoomPage({ params }: Props) {
       await joinRoom(id, savedUsername, savedAvatar || "");
       await fetchMembers(id);
 
-      // determine host by owner_username or owner_id
+      // determine host by the creator recorded on the room
       const roomRec = await fetchRoom(id);
-      const ownerUsername = (roomRec as any)?.owner_username;
-      const ownerId = (roomRec as any)?.owner_id;
-      const { data: latestMembers } = await supabase.from("room_members").select("username").eq("room_id", id);
-      const onlyMemberIsCurrentUser = (latestMembers || []).length === 1 && (latestMembers?.[0] as any)?.username === savedUsername;
+      const ownerUsername = roomRec?.owner_username;
+      const ownerId = roomRec?.owner_id;
 
-      setIsHost(Boolean((ownerId && ownerId === (await supabase.auth.getSession())?.data?.session?.user?.id) || ownerUsername === savedUsername || onlyMemberIsCurrentUser));
+      setIsHost(Boolean((ownerId && ownerId === currentSessionUserId) || ownerUsername === savedUsername));
 
       membersChannel = supabase
         .channel(`room-members-${id}`)
@@ -259,7 +266,7 @@ export default function RoomPage({ params }: Props) {
     };
   }, []);
 
-  const fetchRoom = async (id: string) => {
+  async function fetchRoom(id: string) {
     const { data } = await supabase.from("rooms").select("*").eq("id", id).single();
 
     if (data) {
@@ -276,18 +283,18 @@ export default function RoomPage({ params }: Props) {
     }
 
     return null;
-  };
+  }
 
-  const fetchMembers = async (id: string) => {
+  async function fetchMembers(id: string) {
     const { data } = await supabase.from("room_members").select("*").eq("room_id", id);
     setMembers((data ?? []) as Member[]);
-  };
+  }
 
-  const joinRoom = async (
+  async function joinRoom(
     id: string,
     currentUsername: string,
     currentAvatar: string
-  ) => {
+  ) {
     const { data: existing } = await supabase
       .from("room_members")
       .select("*")
@@ -344,9 +351,11 @@ export default function RoomPage({ params }: Props) {
     } catch (error) {
       console.warn("Could not log activity", error);
     }
-  };
+  }
 
   const removeMember = async (memberId: string) => {
+    if (!isHost) return;
+
     try {
       await supabase.from("room_members").delete().eq("id", memberId);
       await fetchMembers(roomId);
@@ -365,6 +374,8 @@ export default function RoomPage({ params }: Props) {
   };
 
   const extendBreak = async (seconds = 300) => {
+    if (!isHost) return;
+
     // simple implementation: add seconds to timerSeconds when a session is active
     if (!sessionId) return;
     setTimerSeconds((s) => s + seconds);
@@ -437,6 +448,8 @@ export default function RoomPage({ params }: Props) {
   };
 
   const startSession = async () => {
+    if (!isHost) return;
+
     try {
       const { data, error } = await supabase.from("sessions").insert([{ room_id: roomId }]).select().single();
 
@@ -469,6 +482,8 @@ export default function RoomPage({ params }: Props) {
   };
 
   const endSession = async () => {
+    if (!isHost) return;
+
     if (!sessionId) return;
 
     const endedAt = new Date().toISOString();
@@ -516,7 +531,7 @@ export default function RoomPage({ params }: Props) {
   };
 
   const copyCode = async () => {
-    const code = (room as any)?.share_code || (room as any)?.invite_code || (room as any)?.join_code;
+    const code = room?.share_code || room?.invite_code || room?.join_code;
     if (!code) {
       alert("No share code available");
       return;
@@ -576,6 +591,7 @@ export default function RoomPage({ params }: Props) {
           onAddSeat={
             layoutName === "metro"
               ? () => {
+                  if (!isHost) return;
                   setExtraSeats((c) => {
                     const next = c + 1;
                     saveExtras(next, undefined, undefined);
@@ -585,11 +601,24 @@ export default function RoomPage({ params }: Props) {
               : undefined
           }
           onAddTable={
-            layoutName === "cafe" || layoutName === "coffee" || layoutName === "library"
+            layoutName === "cafe" || layoutName === "coffee"
               ? () => {
+                  if (!isHost) return;
                   setExtraTables((c) => {
                     const next = c + 1;
                     saveExtras(undefined, next, undefined);
+                    return next;
+                  });
+                }
+              : undefined
+          }
+          onAddCubicle={
+            layoutName === "library"
+              ? () => {
+                  if (!isHost) return;
+                  setExtraShelves((c) => {
+                    const next = c + 1;
+                    saveExtras(undefined, undefined, next);
                     return next;
                   });
                 }

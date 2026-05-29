@@ -11,10 +11,11 @@ interface Props {
   onExtend: (seconds?: number) => void;
   onAddSeat?: () => void;
   onAddTable?: () => void;
+  onAddCubicle?: () => void;
   onCopyCode?: () => void;
 }
 
-export default function RoomControls({ sessionId, timerSeconds, isHost, onStart, onEnd, onExtend, onAddSeat, onAddTable, onCopyCode }: Props) {
+export default function RoomControls({ sessionId, timerSeconds, isHost, onStart, onEnd, onExtend, onAddSeat, onAddTable, onAddCubicle, onCopyCode }: Props) {
   const canControl = isHost;
 
   return (
@@ -48,6 +49,12 @@ export default function RoomControls({ sessionId, timerSeconds, isHost, onStart,
           {onAddTable && (
             <button onClick={onAddTable} disabled={!canControl} className="px-2 py-1 bg-black text-white rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
               Add table
+            </button>
+          )}
+
+          {onAddCubicle && (
+            <button onClick={onAddCubicle} disabled={!canControl} className="px-2 py-1 bg-black text-white rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              Add cubicle
             </button>
           )}
 

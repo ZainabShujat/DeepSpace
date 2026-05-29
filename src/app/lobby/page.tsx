@@ -83,7 +83,7 @@ export default function LobbyPage() {
           ">
 
             <div className="ds-panel p-3 flex items-center gap-3">
-              <img src={resolveAvatarSrc(avatar)} className="pixel-avatar" />
+              <img src={resolveAvatarSrc(avatar)} alt={username || "Avatar"} className="pixel-avatar" />
 
               <div>
                 <p className="font-bold">{username}</p>

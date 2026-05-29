@@ -23,7 +23,7 @@ export default function GuestPage() {
         </h1>
 
         <p className="text-neutral-500 mb-8">
-          Your progress won't be saved.
+          Your progress won&apos;t be saved.
         </p>
 
         <button

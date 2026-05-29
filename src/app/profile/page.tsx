@@ -6,9 +6,14 @@ import { resolveAvatarSrc } from "@/components/room/Avatar";
 
 type ProfileState = {
   username: string;
-  avatar: string;
+  avatar: string | null;
   mode: "guest" | "logged-in";
   email?: string | null;
+};
+
+type UserProfileRow = {
+  username?: string | null;
+  avatar?: string | null;
 };
 
 export default function ProfilePage() {
@@ -32,8 +37,8 @@ export default function ProfilePage() {
           .single();
 
         setProfile({
-          username: (row as any)?.username || sessionUser.email || "Member",
-          avatar: (row as any)?.avatar || null,
+          username: (row as UserProfileRow | null)?.username || sessionUser.email || "Member",
+          avatar: (row as UserProfileRow | null)?.avatar || null,
           mode: "logged-in",
           email: sessionUser.email,
         });
