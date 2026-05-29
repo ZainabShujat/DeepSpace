@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+export const dynamic = "force-dynamic";
 import { useSearchParams } from "next/navigation";
 
 import createClient from "@/lib/supabase/client";

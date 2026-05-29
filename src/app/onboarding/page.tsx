@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+export const dynamic = "force-dynamic";
 import { useSearchParams } from "next/navigation";
 
 import UsernameForm from "@/components/onboarding/Usernameform";
