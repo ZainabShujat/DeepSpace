@@ -3,6 +3,7 @@ import "@fontsource/press-start-2p";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppSidebar from "@/components/navigation/AppSidebar";
+import AppChrome from "@/components/navigation/AppChrome";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,7 +33,7 @@ export default function RootLayout({
       <body className="min-h-full bg-[#f6f6f7] text-black">
         <div className="min-h-screen">
           <AppSidebar />
-          <div className="min-w-0">{children}</div>
+          <AppChrome>{children}</AppChrome>
         </div>
       </body>
     </html>

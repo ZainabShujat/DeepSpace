@@ -1,15 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
 
 export default function CreateRoom() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [name, setName] = useState("");
   const [layout, setLayout] = useState("metro");
   const [visibility, setVisibility] = useState("public");
   const [maxMembers, setMaxMembers] = useState("");
+
+  const baseCapacityByLayout: Record<string, number> = {
+    metro: 2,
+    cafe: 1,
+    library: 1,
+  };
+
+  const getStartingExtras = (selectedMembers: number, currentLayout: string) => {
+    const baseCapacity = baseCapacityByLayout[currentLayout] ?? 1;
+    return Math.max(selectedMembers - baseCapacity, 0);
+  };
 
   const ensureGuestIdentity = () => {
     try {
@@ -32,19 +45,39 @@ export default function CreateRoom() {
     const shareCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const guestName = ensureGuestIdentity();
+    const selectedMembers = maxMembers === "" ? null : Number(maxMembers);
+    const startingExtras = selectedMembers === null ? 0 : getStartingExtras(selectedMembers, layout);
 
     const payload: any = {
       name,
       layout,
+      type: layout,
+      room_type: layout,
       visibility,
       mode: "endless",
     };
 
-      // include max_members only if the column exists and user supplied a value
+    if (selectedMembers !== null) {
+      payload.max_members = selectedMembers;
+
+      if (layout === "metro") {
+        payload.extra_seats = startingExtras;
+      }
+
+      if (layout === "cafe") {
+        payload.extra_tables = startingExtras;
+      }
+
+      if (layout === "library") {
+        payload.extra_shelves = startingExtras;
+      }
+    }
+
+    // include max_members only if the column exists and user supplied a value
     try {
       const maxTest = await supabase.from("rooms").select("max_members").limit(1).maybeSingle();
       if (!maxTest.error) {
-        if (maxMembers !== "") payload.max_members = Number(maxMembers);
+        if (selectedMembers !== null) payload.max_members = selectedMembers;
       }
     } catch (err) {
       // ignore if column missing
@@ -150,8 +183,12 @@ export default function CreateRoom() {
     alert("Could not create room");
   };
 
+  const routeToAuth = (nextPath: string) => {
+    router.push(`/auth?next=${encodeURIComponent(nextPath)}`);
+  };
+
   return (
-    <div className="flex flex-col gap-4 p-6 w-87.5 thick-border pixel-shadow rounded-sm">
+    <div className="flex flex-col gap-4 p-6 w-87.5 thick-border pixel-shadow rounded-sm bg-white">
       <h2 className="text-2xl font-semibold">Create Room</h2>
 
       <input
@@ -180,18 +217,36 @@ export default function CreateRoom() {
         <option value="private">Private</option>
       </select>
 
-      <select
-        className="border p-3 thick-border rounded-sm"
-        value={maxMembers}
-        onChange={(e) => setMaxMembers(e.target.value)}
-      >
-        <option value="">Unlimited</option>
-        <option value="2">2</option>
-        <option value="4">4</option>
-        <option value="6">6</option>
-        <option value="8">8</option>
-        <option value="10">10</option>
-      </select>
+      <div className="flex items-start gap-2">
+        <select
+          className="border p-3 thick-border rounded-sm flex-1"
+          value={maxMembers}
+          onChange={(e) => setMaxMembers(e.target.value)}
+        >
+          <option value="">Unlimited</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
+        </select>
+
+        {maxMembers === "" && (
+          <div className="group relative mt-2">
+            <button
+              type="button"
+              aria-label="Unlimited room info"
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-black/20 bg-white text-sm font-bold text-black"
+            >
+              i
+            </button>
+
+            <div className="pointer-events-none absolute left-1/2 top-9 z-20 hidden w-56 -translate-x-1/2 rounded-sm border border-black/15 bg-white px-3 py-2 text-xs text-black shadow-lg group-hover:block">
+              Member limit can be increased by adding seats.
+            </div>
+          </div>
+        )}
+      </div>
 
       <button onClick={createRoom} className="bg-black text-white press-button thick-border p-3 rounded-sm">
         Create
@@ -238,6 +293,12 @@ if (!room) {
   alert("No room found");
   return;
 }
+
+                const { data: sessionData } = await supabase.auth.getSession();
+                if (!sessionData?.session?.user) {
+                  routeToAuth(`/room/${room.id}?join=1`);
+                  return;
+                }
 
 if (room.visibility !== "private") {
   alert(`Visibility is: ${room.visibility}`);

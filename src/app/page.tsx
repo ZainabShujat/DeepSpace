@@ -118,7 +118,7 @@ export default function LandingPage() {
           <div className="flex gap-4">
 
             <Link
-              href="/about"
+              href="/explore"
               className="ds-btn px-6 py-3"
             >
               Explore

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import createClient from "@/lib/supabase/client";
 import { resolveAvatarSrc } from "@/components/room/Avatar";
+import BackLink from "@/components/navigation/BackLink";
 
 type ProfileState = {
   username: string;
@@ -58,6 +59,10 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-[#f6f6f7] px-8 py-10">
       <div className="mx-auto max-w-4xl rounded-[36px] border border-black/10 bg-white p-8 shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
+        <div className="mb-6">
+          <BackLink href="/lobby" label="Back to lobby" />
+        </div>
+
         <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.35em] text-black/40">Profile</p>
@@ -90,7 +95,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[26px] border border-black/10 bg-[#fafafa] p-5">
       <p className="text-xs uppercase tracking-[0.3em] text-black/40">{label}</p>
-      <p className="mt-3 text-lg font-semibold break-words">{value}</p>
+      <p className="mt-3 text-lg font-semibold wrap-break-word">{value}</p>
     </div>
   );
 }

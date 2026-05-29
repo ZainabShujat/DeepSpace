@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
 
 export default function RegisterPage() {
 
 	const router = useRouter();
-
+	const searchParams = useSearchParams();
+	const nextPath = searchParams.get("next") || "/lobby";
+console.log("ONBOARDING NEXT:", nextPath);
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 
@@ -28,19 +31,19 @@ export default function RegisterPage() {
 
 			if (signInError) {
 				alert("Account created. Please confirm your email, then log in.");
-				router.push("/login");
+				router.push(`/login?next=${encodeURIComponent(nextPath)}`);
 				return;
 			}
 		}
 
 		// redirect to onboarding to finish username/avatar
-		router.push("/onboarding");
+		router.push(`/onboarding?next=${encodeURIComponent(nextPath)}`);
 	};
 
 	return (
 		<main className="min-h-screen flex items-center justify-center bg-neutral-100">
 
-			<div className="w-[400px] border bg-white p-10 thick-border pixel-shadow rounded-sm">
+			<div className="w-100 border bg-white p-10 thick-border pixel-shadow rounded-sm">
 
 				<h1 className="text-4xl font-bold mb-8 press-title">Register</h1>
 

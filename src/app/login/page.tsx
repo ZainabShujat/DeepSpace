@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
 
 export default function LoginPage() {
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/lobby";
+  console.log("LOGIN NEXT:", nextPath);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -36,7 +40,7 @@ export default function LoginPage() {
         .maybeSingle();
 
       if (!profile?.username) {
-        router.push("/onboarding");
+        router.push(`/onboarding?next=${encodeURIComponent(nextPath)}`);
         return;
       }
 
@@ -44,14 +48,14 @@ export default function LoginPage() {
       if (profile.avatar) localStorage.setItem("avatar", profile.avatar);
     }
 
-    router.push("/lobby");
+    router.push(nextPath);
   };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-neutral-100">
 
 
-      <div className="w-[400px] border bg-white p-10 thick-border pixel-shadow">
+      <div className="w-100 border bg-white p-10 thick-border pixel-shadow">
 
         <h1 className="text-4xl font-bold mb-8 press-title">Login</h1>
 
