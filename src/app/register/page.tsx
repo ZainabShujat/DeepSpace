@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
 
-export default function RegisterPage() {
+export function RegisterPage() {
 
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -74,4 +75,11 @@ console.log("ONBOARDING NEXT:", nextPath);
 
 		</main>
 	);
+}
+export default function Register() {
+  return (
+    <Suspense fallback={<div />}>
+      <RegisterPage/>
+    </Suspense>
+  );
 }

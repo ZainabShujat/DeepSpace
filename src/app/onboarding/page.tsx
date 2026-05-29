@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 export const dynamic = "force-dynamic";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import UsernameForm from "@/components/onboarding/Usernameform";
@@ -9,7 +10,7 @@ import AvatarPicker from "@/components/onboarding/Avatarpicker";
 import upsertProfile from "@/lib/supabase/profile";
 import createClient from "@/lib/supabase/client";
 
-export default function OnboardingPage() {
+export function OnboardingPage() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") || "/lobby";
   console.log("ONBOARDING NEXT:", nextPath);
@@ -80,5 +81,12 @@ export default function OnboardingPage() {
         </div>
       </div>
     </main>
+  );
+}
+export default function Onboarding() {
+  return (
+    <Suspense fallback={<div />}>
+      <OnboardingPage/>
+    </Suspense>
   );
 }

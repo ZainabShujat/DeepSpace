@@ -2,11 +2,12 @@
 
 export const dynamic = "force-dynamic";
 import { useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
 
-export default function LoginPage() {
+export function LoginPage() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,4 +88,10 @@ export default function LoginPage() {
     </main>
   );
 }
-
+export default function Login() {
+  return (
+    <Suspense fallback={<div />}>
+      <LoginPage/>
+    </Suspense>
+   );
+}
