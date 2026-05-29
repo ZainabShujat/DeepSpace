@@ -7,7 +7,7 @@ interface Member {
   username: string;
   avatar: string;
   status: string;
-  seat_id?: string;
+  seat_id?: string | null;
 }
 
 interface Props {

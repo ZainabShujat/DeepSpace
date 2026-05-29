@@ -21,7 +21,7 @@ interface Member {
   username: string;
   status: string;
   avatar: string;
-  seat_id: string | null;
+  seat_id?: string | null;
 }
 
 interface Room {
@@ -192,7 +192,7 @@ export default function RoomPage({ params }: Props) {
     const availableSpots = currentMemberAlreadyHere ? layoutCapacity : layoutCapacity - seatMembers.length;
 
     if (availableSpots <= 0) {
-      alert("That seat is full.");
+      alert("Seat occupied!");
       return;
     }
 
@@ -289,14 +289,14 @@ export default function RoomPage({ params }: Props) {
 
     switch (layoutName) {
       case "metro":
-        return <MetroLayout members={members} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={members as any} joinSeat={joinSeat} extraBenches={extraSeats} />;
       case "library":
-        return <LibraryLayout members={members} joinSeat={joinSeat} extraCubicles={extraShelves} />;
+        return <LibraryLayout members={members as any} joinSeat={joinSeat} extraCubicles={extraShelves} />;
       case "cafe":
       case "coffee":
-        return <CafeLayout members={members} joinSeat={joinSeat} extraTables={extraTables} />;
+        return <CafeLayout members={members as any} joinSeat={joinSeat} extraTables={extraTables} />;
       default:
-        return <MetroLayout members={members} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={members as any} joinSeat={joinSeat} extraBenches={extraSeats} />;
     }
   };
 
