@@ -18,7 +18,7 @@ export default function CreateRoom() {
         const guest = `guest-${Math.random().toString(36).slice(2, 7)}`;
         localStorage.setItem("username", guest);
         localStorage.setItem("avatar", "strawberry");
-        document.cookie = "deepspace-guest=true; path=/; max-age=86400";
+        document.cookie = "deepspace-guest=true; path=/; max-age=86400; SameSite=Lax";
         return guest;
       }
 
@@ -35,14 +35,10 @@ export default function CreateRoom() {
 
     const payload: any = {
       name,
+      layout,
       visibility,
       mode: "endless",
     };
-
-    // set all known room-type columns; the retry loop strips unsupported ones
-    payload.layout = layout;
-    payload.type = layout;
-    payload.room_type = layout;
 
       // include max_members only if the column exists and user supplied a value
     try {
@@ -247,6 +243,19 @@ export default function CreateRoom() {
                 if (typeof roomCapacity?.max_members === "number" && roomCapacity.max_members > 0 && (currentMembers || []).length >= roomCapacity.max_members) {
                   alert("Room is full");
                   return;
+                }
+
+                const { data: activeSession } = await supabase
+                  .from("sessions")
+                  .select("id")
+                  .eq("room_id", room.id)
+                  .is("ended_at", null)
+                  .limit(1)
+                  .maybeSingle();
+
+                if (activeSession) {
+                  const shouldEnter = window.confirm("This room is currently in an active focus session. Enter anyway?");
+                  if (!shouldEnter) return;
                 }
 
                 const { data: existingMember } = await supabase

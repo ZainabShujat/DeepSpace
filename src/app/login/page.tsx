@@ -22,6 +22,28 @@ export default function LoginPage() {
       return;
     }
 
+    document.cookie = "deepspace-guest=; path=/; max-age=0; SameSite=Lax";
+    localStorage.setItem("isGuest", "false");
+
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("users")
+        .select("username, avatar")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (!profile?.username) {
+        router.push("/onboarding");
+        return;
+      }
+
+      localStorage.setItem("username", profile.username);
+      if (profile.avatar) localStorage.setItem("avatar", profile.avatar);
+    }
+
     router.push("/lobby");
   };
 

@@ -123,14 +123,29 @@ export default function RoomPage({ params }: Props) {
 
       setRoomId(id);
 
-      const savedUsername = localStorage.getItem("username") || "guest";
-      const savedAvatar = localStorage.getItem("avatar") || null;
+      let savedUsername = localStorage.getItem("username") || "guest";
+      let savedAvatar = localStorage.getItem("avatar") || null;
 
       // detect current user id for auth users
       let currentSessionUserId: string | null = null;
       try {
         const sess = await supabase.auth.getSession();
-        currentSessionUserId = sess?.data?.session?.user?.id || null;
+        const sessionUser = sess?.data?.session?.user;
+        currentSessionUserId = sessionUser?.id || null;
+
+        if (currentSessionUserId) {
+          const { data: profile } = await supabase
+            .from("users")
+            .select("username, avatar")
+            .eq("id", currentSessionUserId)
+            .maybeSingle();
+
+          savedUsername = profile?.username || sessionUser?.email || savedUsername;
+          savedAvatar = profile?.avatar || savedAvatar;
+
+          localStorage.setItem("username", savedUsername);
+          if (savedAvatar) localStorage.setItem("avatar", savedAvatar);
+        }
       } catch (err) {
         currentSessionUserId = null;
       }
@@ -206,7 +221,7 @@ export default function RoomPage({ params }: Props) {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "sessions", filter: `room_id=eq.${id}` },
-          async (payload) => {
+          async (payload: any) => {
             try {
               const ev = (payload as any).eventType || (payload as any).type || null;
 

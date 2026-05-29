@@ -37,7 +37,7 @@ export default function Chat({ roomId, username, userId }: { roomId: string; use
 
     // subscribe to new messages
     const channel = supabase.channel(`room-messages-${roomId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}` }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}` }, (payload: any) => {
         const m = payload.new as Message;
         setMessages((prev) => [...prev, m]);
       })

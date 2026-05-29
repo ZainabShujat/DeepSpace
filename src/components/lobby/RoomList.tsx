@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "../../../lib/supabase/client";
+import createClient from "@/lib/supabase/client";
 
 interface Room {
   id: string;
@@ -39,7 +39,7 @@ export default function RoomList() {
         schema: "public",
         table: "rooms",
       },
-      (payload) => {
+      (payload: any) => {
         const newRoom = payload.new as Room;
         if (newRoom.visibility === "public") {
           setRooms((prev) => [...prev, newRoom]);

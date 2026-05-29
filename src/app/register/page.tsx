@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import createClient from "@/lib/supabase/client";
-import upsertProfile from "@/lib/supabase/profile";
 
 export default function RegisterPage() {
 
@@ -24,14 +23,13 @@ export default function RegisterPage() {
 			return;
 		}
 
-		// if a user id is returned (no email confirm required), create an empty profile
-		const userId = data?.user?.id;
+		if (!data.session) {
+			const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-		if (userId) {
-			try {
-				await upsertProfile({ id: userId, username: undefined, avatar: "strawberry" });
-			} catch (e) {
-				console.error(e);
+			if (signInError) {
+				alert("Account created. Please confirm your email, then log in.");
+				router.push("/login");
+				return;
 			}
 		}
 

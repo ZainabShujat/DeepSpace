@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import UsernameForm from "@/components/onboarding/Usernameform";
 import AvatarPicker from "@/components/onboarding/Avatarpicker";
@@ -9,8 +8,6 @@ import upsertProfile from "@/lib/supabase/profile";
 import createClient from "@/lib/supabase/client";
 
 export default function OnboardingPage() {
-  const router = useRouter();
-
   const [username, setUsername] = useState("");
   const [selectedAvatar, setSelectedAvatar] =
     useState("strawberry");
@@ -27,18 +24,19 @@ export default function OnboardingPage() {
         if (userId) {
           await upsertProfile({ id: userId, username, avatar: selectedAvatar });
           localStorage.setItem("isGuest", "false");
+          document.cookie = "deepspace-guest=; path=/; max-age=0; SameSite=Lax";
         } else {
           // Guest mode: persist identity locally and continue without auth.
           localStorage.setItem("isGuest", "true");
           localStorage.setItem("username", username);
           localStorage.setItem("avatar", selectedAvatar);
-          document.cookie = "deepspace-guest=true; path=/; max-age=86400";
+          document.cookie = "deepspace-guest=true; path=/; max-age=86400; SameSite=Lax";
         }
 
         localStorage.setItem("username", username);
         localStorage.setItem("avatar", selectedAvatar);
 
-        router.push("/lobby");
+        window.location.href = "/lobby";
       } catch (e) {
         console.error(e);
         alert("Unable to save profile");
