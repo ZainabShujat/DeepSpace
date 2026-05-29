@@ -51,12 +51,12 @@ console.log("NEXT PATH:", nextPath)
 
     if (error || !data) return;
 
-    const counts = data.reduce<Record<string, number>>((accumulator, row) => {
-      const roomId = (row as { room_id?: string }).room_id;
-      if (!roomId) return accumulator;
-      accumulator[roomId] = (accumulator[roomId] || 0) + 1;
-      return accumulator;
-    }, {});
+    const counts: Record<string, number> = {};
+
+(data as { room_id: string }[]).forEach((row) => {
+  if (!row.room_id) return;
+  counts[row.room_id] = (counts[row.room_id] || 0) + 1;
+});
 
     setMemberCounts(counts);
   };
