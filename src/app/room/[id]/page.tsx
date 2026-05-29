@@ -177,8 +177,10 @@ export default function RoomPage({ params }: Props) {
       const roomRec = await fetchRoom(id);
       const ownerUsername = (roomRec as any)?.owner_username;
       const ownerId = (roomRec as any)?.owner_id;
+      const { data: latestMembers } = await supabase.from("room_members").select("username").eq("room_id", id);
+      const onlyMemberIsCurrentUser = (latestMembers || []).length === 1 && (latestMembers?.[0] as any)?.username === savedUsername;
 
-      setIsHost(Boolean((ownerId && ownerId === (await supabase.auth.getSession())?.data?.session?.user?.id) || ownerUsername === savedUsername));
+      setIsHost(Boolean((ownerId && ownerId === (await supabase.auth.getSession())?.data?.session?.user?.id) || ownerUsername === savedUsername || onlyMemberIsCurrentUser));
 
       membersChannel = supabase
         .channel(`room-members-${id}`)

@@ -107,6 +107,26 @@ export default function CreateRoom() {
         const { data, error } = await supabase.from("rooms").insert([payload]).select();
         if (!error && data && data[0]) {
           const room = data[0];
+
+          if (visibility === "private") {
+            const creatorName = guestName || ensureGuestIdentity() || "guest";
+            const creatorAvatar = typeof window !== "undefined" ? localStorage.getItem("avatar") || "strawberry" : "strawberry";
+
+            try {
+              await supabase.from("room_members").insert([
+                {
+                  room_id: room.id,
+                  username: creatorName,
+                  avatar: creatorAvatar,
+                  status: "on arrival",
+                  seat_id: null,
+                },
+              ]);
+            } catch (memberErr) {
+              console.warn("Could not pre-enroll creator in private room", memberErr);
+            }
+          }
+
           window.location.href = `/room/${room.id}`;
           return;
         }
@@ -208,7 +228,7 @@ export default function CreateRoom() {
                 const { data: room, error } = await supabase
                   .from("rooms")
                   .select("id, visibility, max_members")
-                  .or(`invite_code.eq.${code},share_code.eq.${code}`)
+                  .or(`invite_code.eq.${code},share_code.eq.${code},id.eq.${code}`)
                   .maybeSingle();
 
                 if (error) throw error;
