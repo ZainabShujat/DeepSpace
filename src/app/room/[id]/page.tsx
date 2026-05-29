@@ -60,6 +60,7 @@ export default function RoomPage({ params }: Props) {
   const [members, setMembers] = useState<Member[]>([]);
   const [username, setUsername] = useState("");
   const [isHost, setIsHost] = useState(false);
+  const [activity, setActivity] = useState<any[]>([]);
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -116,7 +117,7 @@ export default function RoomPage({ params }: Props) {
   useEffect(() => {
     let membersChannel: ReturnType<typeof supabase.channel> | null = null;
     let sessionsChannel: ReturnType<typeof supabase.channel> | null = null;
-
+    let activityChannel: ReturnType<typeof supabase.channel> | null = null;
     const initialize = async () => {
       const resolvedParams = await params;
       const id = resolvedParams.id;
@@ -196,6 +197,7 @@ export default function RoomPage({ params }: Props) {
 
       await joinRoom(id, savedUsername, savedAvatar || "");
       await fetchMembers(id);
+      await fetchActivity(id);
 
       // determine host by the creator recorded on the room
       const roomRec = await fetchRoom(id);
@@ -214,6 +216,23 @@ export default function RoomPage({ params }: Props) {
           }
         )
         .subscribe();
+
+
+   activityChannel = supabase
+  .channel(`room-activity-${id}`)
+  .on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "activity_log",
+      filter: `room_id=eq.${id}`,
+    },
+    () => {
+      fetchActivity(id);
+    }
+  )
+  .subscribe();
 
       // listen for session start / end to synchronize timers
       sessionsChannel = supabase
@@ -270,6 +289,9 @@ export default function RoomPage({ params }: Props) {
       if (sessionsChannel) {
         supabase.removeChannel(sessionsChannel);
       }
+      if (activityChannel) {
+       supabase.removeChannel(activityChannel);
+      }
     };
   }, [params, supabase]);
 
@@ -304,6 +326,17 @@ export default function RoomPage({ params }: Props) {
     const { data } = await supabase.from("room_members").select("*").eq("room_id", id);
     setMembers((data ?? []) as Member[]);
   }
+
+  async function fetchActivity(id: string) {
+  const { data } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("room_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  setActivity(data || []);
+}
 
   async function joinRoom(
     id: string,
@@ -367,17 +400,61 @@ export default function RoomPage({ params }: Props) {
       console.warn("Could not log activity", error);
     }
   }
+  useEffect(() => {
+  const cleanup = async () => {
+    try {
+      await supabase
+        .from("room_members")
+        .delete()
+        .eq("room_id", roomId)
+        .eq("username", username);
+    } catch {}
+  };
+
+  const handleUnload = () => {
+    cleanup();
+  };
+
+  window.addEventListener("beforeunload", handleUnload);
+
+  return () => {
+    cleanup();
+    window.removeEventListener("beforeunload", handleUnload);
+  };
+}, [roomId, username]);
 
   const removeMember = async (memberId: string) => {
-    if (!isHost) return;
-
+  
     try {
+      
+      const leavingMember = members.find(
+  (m) => m.id === memberId
+);
+
+if (
+  room?.owner_username === leavingMember?.username
+) {
+  const nextHost = members.find(
+    (m) => m.id !== memberId
+  );
+
+  if (nextHost) {
+    await supabase
+      .from("rooms")
+      .update({
+        owner_username: nextHost.username,
+      })
+      .eq("id", roomId);
+  }
+}
       await supabase.from("room_members").delete().eq("id", memberId);
       await fetchMembers(roomId);
 
       try {
         await supabase.from("activity_log").insert([
-          { room_id: roomId, user_id: null, action: "remove_member", details: { memberId } },
+          { room_id: roomId, user_id: null, action: "remove_member", details: {
+  username: members.find(m => m.id === memberId)?.username || "unknown"
+}},
         ]);
       } catch (err) {
         console.warn("Could not log remove member", err);
@@ -407,7 +484,19 @@ export default function RoomPage({ params }: Props) {
   const joinSeat = async (seatId: string) => {
     const seatMembers = members.filter((member) => member.seat_id === seatId);
     const currentMember = members.find((member) => member.username === username);
-    const layoutCapacity = SEAT_CAPACITY[layoutName] ?? 1;
+    let layoutCapacity = SEAT_CAPACITY[layoutName] ?? 1;
+
+if (layoutName === "metro") {
+  layoutCapacity += extraSeats;
+}
+
+if (layoutName === "cafe" || layoutName === "coffee") {
+  layoutCapacity += extraTables;
+}
+
+if (layoutName === "library") {
+  layoutCapacity += extraShelves;
+}
 
     const currentMemberAlreadyHere = currentMember?.seat_id === seatId;
     const availableSpots = currentMemberAlreadyHere ? layoutCapacity : layoutCapacity - seatMembers.length;
@@ -485,7 +574,9 @@ export default function RoomPage({ params }: Props) {
 
       try {
         await supabase.from("activity_log").insert([
-          { room_id: roomId, user_id: null, action: "session_start", details: { session_id: data.id } },
+          { room_id: roomId, user_id: null, action: "session_start",details: {
+  started_by: username
+} },
         ]);
       } catch (error) {
         console.warn("Could not log session start", error);
@@ -523,7 +614,10 @@ export default function RoomPage({ params }: Props) {
 
       try {
         await supabase.from("activity_log").insert([
-          { room_id: roomId, user_id: null, action: "session_end", details: { duration_seconds: duration } },
+          { room_id: roomId, user_id: null, action: "session_end", details: {
+  ended_by: username,
+  duration_seconds: duration
+} },
         ]);
         // persist session history
         try {
@@ -576,7 +670,35 @@ export default function RoomPage({ params }: Props) {
         return <MetroLayout members={members} joinSeat={joinSeat} extraBenches={extraSeats} />;
     }
   };
+function formatActivity(item: any) {
+  const details = item.details || {};
 
+  switch (item.action) {
+    case "join":
+      return `${details.username || "Someone"} joined the room`;
+
+    case "remove_member":
+      return `${details.username || "Someone"} left the room`;
+
+    case "seat":
+      return `${details.username || "Someone"} sat at ${details.seat || "a seat"}`;
+
+    case "status":
+      return `${details.username || "Someone"} is now ${details.status}`;
+
+    case "session_start":
+      return "Focus session started";
+
+    case "session_end":
+      return "Focus session ended";
+
+    case "extend_break":
+      return `Break extended by ${details.seconds || 0} seconds`;
+
+    default:
+      return item.action;
+  }
+}
   return (
     <main className="min-h-screen p-8 bg-[#f6f6f7]">
       <div className="flex items-start justify-between mb-8">
@@ -644,11 +766,66 @@ export default function RoomPage({ params }: Props) {
 
         {renderLayout()}
       </div>
+      <div className="mt-4">
+  <button
+    className="border px-4 py-2 rounded-sm"
+    onClick={async () => {
+      try {
+        const me = members.find(
+          (m) => m.username === username
+        );
 
+        if (!me) {
+          window.location.href = "/lobby";
+          return;
+        }
+
+        await removeMember(me.id);
+
+        window.location.href = "/lobby";
+      } catch (err) {
+        console.error(err);
+        alert("Could not leave room");
+      }
+    }}
+  >
+    Leave Room
+  </button>
+</div>
       <div className="mt-8">
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
-            <Chat roomId={roomId} username={username} userId={null} />
+            <div className="col-span-2 space-y-6">
+
+  <Chat
+    roomId={roomId}
+    username={username}
+    userId={null}
+  />
+
+  <div className="border thick-border p-4 rounded-sm">
+    <h3 className="text-lg font-semibold mb-3">
+      Recent Activity
+    </h3>
+
+    <div className="space-y-2 text-sm">
+      {activity.map((item) => (
+        <div key={item.id}>
+          <div className="font-medium">
+            {formatActivity(item)}
+          </div>
+
+          <div className="opacity-60 text-xs">
+            {new Date(item.created_at)
+              .toLocaleTimeString()}
+          </div>
+        </div>
+      ))}
+    </div>
+
+  </div>
+
+</div>
           </div>
 
           <div className="col-span-1">

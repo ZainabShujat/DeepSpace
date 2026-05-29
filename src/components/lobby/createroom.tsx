@@ -222,16 +222,26 @@ export default function CreateRoom() {
                 }
 
                 const { data: room, error } = await supabase
-                  .from("rooms")
-                  .select("id, visibility, max_members")
-                  .or(`invite_code.eq.${code},share_code.eq.${code},id.eq.${code}`)
-                  .maybeSingle();
+  .from("rooms")
+  .select("id, visibility, max_members")
+  .or(`invite_code.eq.${code},share_code.eq.${code}`)
+  .maybeSingle();
+
+console.log("ROOM:", room);
+console.log("ERROR:", error);
 
                 if (error) throw error;
 
-                if (!room || room.visibility !== "private") {
-                  alert("Invalid code or room not private");
-                  return;
+                console.log(room);
+
+if (!room) {
+  alert("No room found");
+  return;
+}
+
+if (room.visibility !== "private") {
+  alert(`Visibility is: ${room.visibility}`);
+  return;
                 }
 
                 const guestName = ensureGuestIdentity() || "guest";
