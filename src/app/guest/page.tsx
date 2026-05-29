@@ -16,9 +16,9 @@ export default function GuestPage() {
   return (
     <main className="min-h-screen flex items-center justify-center">
 
-      <div className="border rounded-3xl p-10 w-[400px] bg-white">
+      <div className="border p-10 w-[400px] bg-white thick-border pixel-shadow">
 
-        <h1 className="text-3xl font-bold mb-4">
+        <h1 className="text-3xl font-bold mb-4 press-title">
           Guest Mode
         </h1>
 
@@ -28,7 +28,7 @@ export default function GuestPage() {
 
         <button
           onClick={continueGuest}
-          className="w-full bg-black text-white py-3 rounded-xl"
+          className="w-full bg-black text-white py-3 press-button thick-border"
         >
           Continue
         </button>

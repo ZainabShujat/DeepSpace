@@ -60,7 +60,7 @@ export default function Chat({ roomId, username, userId }: { roomId: string; use
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 border rounded-lg bg-white">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 ds-panel">
         {messages.map((m) => (
           <div key={m.id} className="">
             <div className="text-sm font-semibold">{m.username}</div>
@@ -71,8 +71,8 @@ export default function Chat({ roomId, username, userId }: { roomId: string; use
       </div>
 
       <div className="mt-3 flex gap-2">
-        <input value={text} onChange={(e) => setText(e.target.value)} className="flex-1 border rounded-lg px-3 py-2" placeholder="Message" />
-        <button onClick={send} className="px-4 py-2 bg-black text-white rounded-lg">Send</button>
+        <input value={text} onChange={(e) => setText(e.target.value)} className="flex-1 ds-input" placeholder="Message" />
+        <button onClick={send} className="ds-btn">Send</button>
       </div>
     </div>
   );

@@ -2,13 +2,7 @@
 
 import Avatar from "../room/Avatar";
 
-interface Member {
-  id: string;
-  username: string;
-  avatar: string;
-  status: string;
-  seat_id?: string | null;
-}
+import type { Member } from "@/types/member";
 
 interface Props {
   members: Member[];
@@ -45,7 +39,7 @@ export default function MetroLayout({
     );
 
   return (
-    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-gradient-to-b from-[#d8d8de] to-[#c7c7cf]">
+    <div className="relative w-full h-[720px] overflow-hidden ds-card metro-theme">
 
       {/* windows */}
       <div className="absolute top-6 left-8 right-8 flex justify-between opacity-50">
@@ -68,32 +62,19 @@ export default function MetroLayout({
             const member = getMember(seatId);
 
             return (
-              <button
-                key={seatId}
-                onClick={() => joinSeat(seatId)}
-                className="w-[320px] h-[110px] rounded-[28px] border-2 border-black bg-[#8f919d] shadow-[0_10px_0_#676873] hover:translate-y-1 hover:shadow-[0_6px_0_#676873] transition-all"
-              >
+              <button key={seatId} onClick={() => joinSeat(seatId)} className="metro-seat w-[320px] h-[110px] p-0 overflow-hidden rounded-[28px] border-2 border-black bg-[#8f919d] shadow-[0_10px_0_#676873] hover:translate-y-1 hover:shadow-[0_6px_0_#676873] transition-all">
                 {member ? (
                   <div className="flex items-center gap-5 p-5">
-                    <Avatar
-                      avatar={member.avatar}
-                      username={member.username}
-                    />
+                    <Avatar avatar={member.avatar} username={member.username} />
 
                     <div className="text-left">
-                      <p className="font-black text-lg">
-                        {member.username}
-                      </p>
+                      <p className="font-black text-lg">{member.username}</p>
 
-                      <p className="text-sm opacity-70">
-                        {member.status}
-                      </p>
+                      <p className="text-sm opacity-70">{member.status}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-sm opacity-40">
-                    empty seat
-                  </div>
+                  <div className="h-full flex items-center justify-center text-sm opacity-40">empty seat</div>
                 )}
               </button>
             );

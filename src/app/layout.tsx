@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@fontsource/press-start-2p";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppSidebar from "@/components/navigation/AppSidebar";

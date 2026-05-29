@@ -48,8 +48,8 @@ export default function OnboardingPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-xl border rounded-3xl p-8 bg-white">
-        <h1 className="text-4xl font-bold mb-2">
+      <div className="w-full max-w-xl border p-8 bg-white thick-border pixel-shadow">
+        <h1 className="text-4xl font-bold mb-2 press-title">
           Welcome to DeepSpace
         </h1>
 
@@ -70,7 +70,7 @@ export default function OnboardingPage() {
 
           <button
             onClick={handleContinue}
-            className="w-full bg-black text-white rounded-2xl py-4"
+            className="w-full bg-black text-white press-button thick-border py-4"
           >
             Continue
           </button>

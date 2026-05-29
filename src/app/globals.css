@@ -1,26 +1,299 @@
 @import "tailwindcss";
 
+/* =========================
+   DEEPSPACE DESIGN TOKENS
+========================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ececec;
+  --text: #161616;
+
+  --metro-bg: #D8DBE2;
+  --metro-seat: #A1A6B4;
+  --metro-ink: #3E4552;
+
+  --library-bg: #E5DCCF;
+  --library-cubicle: #BFA78A;
+  --library-ink: #6D5747;
+
+  --cafe-bg: #F2D7A1;
+  --cafe-table: #D97A1E;
+  --cafe-ink: #6B3E00;
+
+  --shadow-soft: 0 4px 0 rgba(0,0,0,0.25);
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.08);
+
+  --radius-lg: 28px;
+  --radius-md: 18px;
+
+  /* Pixel-style shadows */
+  --shadow-soft: 4px 4px 0 #000;
+  --shadow-card: 6px 6px 0 #000;
+
+  /* Low-radius for chunky look */
+  --radius-lg: 4px;
+  --radius-md: 4px;
+
+  --transition-fast: 0.15s ease;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* =========================
+   BASE
+========================= */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+
+  font-family:
+    Inter,
+    system-ui,
+    sans-serif;
+
+  overflow-x: hidden;
 }
+
+/* =========================
+   PIXEL SUPPORT
+========================= */
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.pixel-avatar {
+  width: 56px;
+  height: 56px;
+
+  image-rendering: pixelated;
+
+  border-radius: 4px;
+
+  border: 3px solid #000;
+
+  background: #fff;
+}
+
+.press-title {
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 0.02em;
+}
+
+.press-button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+}
+
+.thick-border {
+  border: 3px solid #000;
+}
+
+.pixel-shadow {
+  box-shadow: 4px 4px 0 #000;
+}
+
+.pixel-shadow-lg {
+  box-shadow: 6px 6px 0 #000;
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.ds-card {
+  background: white;
+
+  border: 3px solid #000;
+
+  border-radius: var(--radius-lg);
+
+  box-shadow: var(--shadow-soft);
+}
+
+.ds-panel {
+  background: white;
+
+  border: 3px solid #000;
+
+  border-radius: var(--radius-lg);
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.ds-btn {
+  border-radius: 4px;
+
+  border: 3px solid #000;
+
+  background: #000;
+
+  color: #fff;
+
+  transition: var(--transition-fast);
+
+  cursor: pointer;
+}
+.ds-btn:hover {
+  transform: translateY(-2px);
+}
+.ds-btn-secondary {
+  background: white;
+  color: black;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.ds-input {
+  border: 3px solid #000;
+
+  border-radius: 4px;
+
+  background: white;
+
+  padding: 12px 16px;
+
+  outline: none;
+}
+
+.ds-input:focus {
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+}
+
+/* =========================
+   ROOM THEMES
+========================= */
+
+.metro-theme {
+  background: var(--metro-bg);
+}
+
+.library-theme {
+  background: var(--library-bg);
+}
+
+.cafe-theme {
+  background: var(--cafe-bg);
+}
+
+/* =========================
+   SEATS
+========================= */
+
+.metro-seat {
+  background: var(--metro-seat);
+
+  border: 2px solid #2a2a2a;
+
+  border-radius: 18px;
+
+  box-shadow: var(--shadow-soft);
+}
+
+.metro-seat:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 6px 0 rgba(0,0,0,0.6);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.library-cubicle {
+  background: var(--library-cubicle);
+
+  border: 2px solid #2a2a2a;
+
+  border-radius: 22px;
+
+  box-shadow: var(--shadow-soft);
+}
+
+.cafe-table {
+  background: var(--cafe-table);
+
+  border: 4px solid #8b4300;
+
+  border-radius: 999px;
+
+  box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #dddddd;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #999;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Themed pixel headers (decorative strips) */
+.library-header {
+  background-image: repeating-linear-gradient(90deg, #bfa78a 0 8px, #e5dccf 8px 16px);
+  height: 48px;
+}
+
+.metro-header {
+  background-image: repeating-linear-gradient(90deg, #a1a6b4 0 6px, #d8dbe2 6px 12px);
+  height: 48px;
+}
+
+.cafe-header {
+  background-image: repeating-linear-gradient(90deg, #d97a1e 0 6px, #f2d7a1 6px 12px);
+  height: 48px;
+}
+
+/* =========================
+   PIXEL LANDING
+========================= */
+
+.landing-bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.pixel-float {
+  position: absolute;
+
+  color: rgba(255,255,255,0.75);
+
+  font-family: 'Press Start 2P', monospace;
+
+  font-size: 14px;
+
+  animation: drift 8s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+

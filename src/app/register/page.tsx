@@ -42,15 +42,15 @@ export default function RegisterPage() {
 	return (
 		<main className="min-h-screen flex items-center justify-center bg-neutral-100">
 
-			<div className="w-[400px] rounded-[32px] border bg-white p-10">
+			<div className="w-[400px] border bg-white p-10 thick-border pixel-shadow rounded-sm">
 
-				<h1 className="text-4xl font-bold mb-8">Register</h1>
+				<h1 className="text-4xl font-bold mb-8 press-title">Register</h1>
 
 				<input
 					value={email}
 					onChange={(e) => setEmail(e.target.value)}
 					placeholder="email"
-					className="w-full border rounded-2xl px-4 py-4 mb-4"
+					className="w-full border px-4 py-4 mb-4 thick-border rounded-sm"
 				/>
 
 				<input
@@ -58,12 +58,12 @@ export default function RegisterPage() {
 					onChange={(e) => setPassword(e.target.value)}
 					placeholder="password"
 					type="password"
-					className="w-full border rounded-2xl px-4 py-4 mb-6"
+					className="w-full border px-4 py-4 mb-6 thick-border rounded-sm"
 				/>
 
 				<button
 					onClick={handleRegister}
-					className="w-full rounded-2xl bg-black py-4 text-white"
+					className="w-full bg-black py-4 text-white press-button thick-border"
 				>
 					Create account
 				</button>

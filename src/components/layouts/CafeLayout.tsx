@@ -2,13 +2,7 @@
 
 import Avatar from "../room/Avatar";
 
-interface Member {
-  id: string;
-  username: string;
-  avatar: string;
-  status: string;
-  seat_id?: string | null;
-}
+import type { Member } from "@/types/member";
 
 interface Props {
   members: Member[];
@@ -50,7 +44,7 @@ export default function CafeLayout({
     );
 
   return (
-    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-[#f3e4c7]">
+    <div className="relative w-full h-[720px] overflow-hidden ds-card cafe-theme">
 
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#000_1px,transparent_1px)] bg-[size:24px_24px]" />
 
@@ -62,12 +56,7 @@ export default function CafeLayout({
           positions[index % positions.length];
 
         return (
-          <button
-            key={tableId}
-            onClick={() => joinSeat(tableId)}
-            style={pos}
-            className="absolute w-[240px] h-[240px] rounded-full border-[8px] border-[#6b2e00] bg-[#ba5a00] shadow-xl hover:scale-[1.02] transition-all"
-          >
+          <button key={tableId} onClick={() => joinSeat(tableId)} style={pos} className="absolute cafe-table w-[240px] h-[240px] shadow-xl hover:scale-[1.02] transition-all">
             {member ? (
               <div className="flex h-full flex-col items-center justify-center">
                 <Avatar

@@ -17,10 +17,15 @@ CREATE TABLE IF NOT EXISTS rooms (
   name TEXT NOT NULL,
   layout TEXT NOT NULL DEFAULT 'metro', -- metro | cafe | library
   visibility TEXT NOT NULL DEFAULT 'public', -- public | private
+  max_members INTEGER DEFAULT 6,
   mode TEXT NOT NULL DEFAULT 'endless',
   invite_code TEXT UNIQUE,
   share_code TEXT UNIQUE,
+  extra_seats INTEGER DEFAULT 0,
+  extra_tables INTEGER DEFAULT 0,
+  extra_shelves INTEGER DEFAULT 0,
   owner_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  owner_username TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -63,6 +68,17 @@ CREATE TABLE IF NOT EXISTS activity_log (
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   action TEXT NOT NULL,
   details JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Session history records for completed sessions
+CREATE TABLE IF NOT EXISTS session_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
+  room_name TEXT,
+  ended_at TIMESTAMPTZ,
+  duration_seconds INTEGER,
+  members JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

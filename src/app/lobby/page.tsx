@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import CreateRoom from "@/components/lobby/createroom";
 import RoomList from "@/components/lobby/RoomList";
 import createClient from "@/lib/supabase/client";
+import { resolveAvatarSrc } from "@/components/room/Avatar";
 
 export default function LobbyPage() {
 
@@ -19,11 +20,11 @@ export default function LobbyPage() {
       const userId = data?.session?.user?.id;
 
       if (userId) {
-        const { data: profile } = await supabase.from("profiles").select("username, avatar").eq("id", userId).single();
+        const { data: profile } = await supabase.from("users").select("username, avatar").eq("id", userId).single();
 
         if (profile) {
-          setUsername(profile.username || data?.session?.user?.email || "");
-          setAvatar(profile.avatar || "/avatars/strawberry.png");
+          setUsername((profile as any).username || data?.session?.user?.email || "");
+          setAvatar((profile as any).avatar || null);
           return;
         }
       }
@@ -32,19 +33,14 @@ export default function LobbyPage() {
       const guestName = typeof window !== "undefined" ? localStorage.getItem("username") : null;
       const guestAvatar = typeof window !== "undefined" ? localStorage.getItem("avatar") : null;
       setUsername(guestName);
-      setAvatar(guestAvatar);
+      setAvatar(guestAvatar || null);
     };
 
     loadProfile();
   }, []);
 
   return (
-    <main className="
-      min-h-screen
-      bg-[#f4f4f5]
-      px-10
-      py-12
-    ">
+    <main className="min-h-screen px-10 py-12">
 
       <div className="
         max-w-[1400px]
@@ -86,36 +82,14 @@ export default function LobbyPage() {
             gap-4
           ">
 
-            <div className="
-              bg-white
-              border
-              rounded-2xl
-              px-5
-              py-3
-              flex
-              items-center
-              gap-3
-              shadow-sm
-            ">
-
-              <img
-                src={avatar || "/avatars/strawberry.png"}
-                className="w-12 h-12"
-              />
+            <div className="ds-panel p-3 flex items-center gap-3">
+              <img src={resolveAvatarSrc(avatar)} className="pixel-avatar" />
 
               <div>
-                <p className="font-bold">
-                  {username}
-                </p>
+                <p className="font-bold">{username}</p>
 
-                <p className="
-                  text-sm
-                  opacity-60
-                ">
-                  ready to focus
-                </p>
+                <p className="text-sm opacity-60">ready to focus</p>
               </div>
-
             </div>
 
             <button
@@ -131,16 +105,7 @@ export default function LobbyPage() {
 
                 window.location.href = "/";
               }}
-              className="
-                px-6
-                py-4
-                rounded-2xl
-                border
-                bg-white
-                hover:bg-black
-                hover:text-white
-                transition-all
-              "
+              className="ds-btn ds-btn-secondary px-6 py-3"
             >
               Logout
             </button>

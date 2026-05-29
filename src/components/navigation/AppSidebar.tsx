@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import createClient from "@/lib/supabase/client";
+import { resolveAvatarSrc } from "@/components/room/Avatar";
 
 type SessionUser = {
   username: string;
-  avatar: string;
+  avatar?: string | null;
   mode: "guest" | "logged-in";
   email?: string | null;
 };
@@ -16,7 +17,7 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<SessionUser>({
     username: "Guest",
-    avatar: "/avatars/strawberry.png",
+    avatar: null,
     mode: "guest",
   });
   const [open, setOpen] = useState(false);
@@ -29,14 +30,14 @@ export default function AppSidebar() {
 
       if (sessionUser) {
         const { data: profile } = await supabase
-          .from("profiles")
+          .from("users")
           .select("username, avatar")
           .eq("id", sessionUser.id)
           .single();
 
         setUser({
           username: profile?.username || sessionUser.email || "Member",
-          avatar: profile?.avatar || "/avatars/strawberry.png",
+          avatar: profile?.avatar || null,
           mode: "logged-in",
           email: sessionUser.email,
         });
@@ -44,7 +45,7 @@ export default function AppSidebar() {
       }
 
       const guestUsername = localStorage.getItem("username") || "Guest";
-      const guestAvatar = localStorage.getItem("avatar") || "/avatars/strawberry.png";
+      const guestAvatar = localStorage.getItem("avatar") || null;
 
       setUser({
         username: guestUsername,
@@ -90,10 +91,10 @@ export default function AppSidebar() {
               </button>
             </div>
 
-            <div className="mb-8 rounded-3xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-8 ds-panel p-4">
               <div className="flex items-center gap-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={user.avatar} alt={user.username} className="h-12 w-12 rounded-full border border-white/20 object-cover" />
+                <img src={resolveAvatarSrc(user.avatar)} alt={user.username} className="pixel-avatar" />
                 <div className="min-w-0">
                   <div className="truncate font-semibold">{user.username}</div>
                   <div className="text-xs text-white/60 capitalize">{user.mode}</div>
@@ -108,7 +109,7 @@ export default function AppSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`block rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                    className={`block px-4 py-3 text-sm font-medium transition rounded-sm ${
                       active ? "bg-white text-black" : "text-white/80 hover:bg-white/10 hover:text-white"
                     }`}
                     onClick={() => setOpen(false)}
@@ -119,7 +120,7 @@ export default function AppSidebar() {
               })}
             </nav>
 
-            <div className="mt-auto rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+            <div className="mt-auto rounded-sm thick-border bg-white p-4 text-sm text-white/70">
               <p className="font-semibold text-white">Navigation</p>
               <p className="mt-1">Profile shows whether you are in guest mode or signed in.</p>
             </div>

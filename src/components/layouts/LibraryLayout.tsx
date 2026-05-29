@@ -2,13 +2,7 @@
 
 import Avatar from "../room/Avatar";
 
-interface Member {
-  id: string;
-  username: string;
-  avatar: string;
-  status: string;
-  seat_id?: string | null;
-}
+import type { Member } from "@/types/member";
 
 interface Props {
   members: Member[];
@@ -43,7 +37,7 @@ export default function LibraryLayout({
     );
 
   return (
-    <div className="relative w-full h-[720px] overflow-hidden rounded-[42px] border-2 border-black bg-[#d9d3cb]">
+    <div className="relative w-full h-[720px] overflow-hidden ds-card library-theme">
 
       {/* shelves */}
       <div className="absolute left-0 top-0 h-full w-[70px] bg-[#514a44]" />
@@ -58,11 +52,7 @@ export default function LibraryLayout({
             getMember(cubicleId);
 
           return (
-            <button
-              key={cubicleId}
-              onClick={() => joinSeat(cubicleId)}
-              className="w-[820px] h-[90px] rounded-[24px] border-2 border-black bg-[#b8b1aa] px-8 shadow-[0_8px_0_#8d867f] hover:translate-y-1 hover:shadow-[0_4px_0_#8d867f] transition-all"
-            >
+            <button key={cubicleId} onClick={() => joinSeat(cubicleId)} className="library-cubicle w-[820px] h-[90px] px-8 shadow-[0_8px_0_#8d867f] hover:translate-y-1 hover:shadow-[0_4px_0_#8d867f] transition-all">
               {member ? (
                 <div className="flex h-full items-center gap-5">
                   <Avatar

@@ -10,7 +10,7 @@ export async function upsertProfile(profile: Profile) {
   const supabase = createClient();
 
   const { data, error } = await supabase
-    .from("profiles")
+    .from("users")
     .upsert({ id: profile.id, username: profile.username, avatar: profile.avatar }, { onConflict: "id" })
     .select()
     .single();

@@ -29,10 +29,10 @@ export default function RoomList() {
         table: "rooms",
       },
       (payload) => {
-        setRooms((prev) => [
-          ...prev,
-          payload.new as Room,
-        ]);
+        const newRoom = payload.new as Room;
+        if (newRoom.visibility === "public") {
+          setRooms((prev) => [...prev, newRoom]);
+        }
       }
     );
 
@@ -46,7 +46,8 @@ export default function RoomList() {
   const fetchRooms = async () => {
     const { data, error } = await supabase
       .from("rooms")
-      .select("*");
+      .select("*")
+      .eq("visibility", "public");
 
     if (!error && data) {
       setRooms(data);
@@ -54,24 +55,14 @@ export default function RoomList() {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-[350px]">
-      <h2 className="text-2xl font-semibold">
-        Active Rooms
-      </h2>
+    <div className="flex flex-col gap-4 w-87.5">
+      <h2 className="text-2xl font-semibold press-title">Active Rooms</h2>
 
       {rooms.map((room) => (
-        <Link
-          href={`/room/${room.id}`}
-          key={room.id}
-        >
-          <div className="border rounded-2xl p-4 hover:bg-gray-100 transition cursor-pointer">
-            <h3 className="text-xl font-medium">
-              {room.name}
-            </h3>
-
-            <p className="text-sm opacity-70">
-              {room.layout} • {room.visibility}
-            </p>
+        <Link href={`/room/${room.id}`} key={room.id}>
+          <div className="p-4 thick-border pixel-shadow hover:bg-gray-100 transition cursor-pointer rounded-sm">
+            <h3 className="text-xl font-medium">{room.name}</h3>
+            <p className="text-sm opacity-70">{room.layout} • {room.visibility}</p>
           </div>
         </Link>
       ))}
