@@ -6,6 +6,7 @@ export interface Member {
   seat_id?: string | null;
   approval_status?: string | null;
   focus_task?: string | null;
+  last_seen_at?: string | null;
 }
 
 export default Member;

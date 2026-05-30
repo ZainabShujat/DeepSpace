@@ -47,14 +47,17 @@ console.log("NEXT PATH:", nextPath)
   const fetchMemberCounts = async () => {
     const { data, error } = await supabase
       .from("room_members")
-      .select("room_id");
+      .select("room_id, last_seen_at");
 
     if (error || !data) return;
 
+    const seenThreshold = Date.now() - 60 * 1000;
+
     const counts: Record<string, number> = {};
 
-(data as { room_id: string }[]).forEach((row) => {
+(data as { room_id: string; last_seen_at?: string | null }[]).forEach((row) => {
   if (!row.room_id) return;
+  if (row.last_seen_at && new Date(row.last_seen_at).getTime() < seenThreshold) return;
   counts[row.room_id] = (counts[row.room_id] || 0) + 1;
 });
 

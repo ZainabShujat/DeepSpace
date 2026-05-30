@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS room_members (
   status TEXT,
   approval_status TEXT NOT NULL DEFAULT 'approved',
   focus_task TEXT,
+  last_seen_at TIMESTAMPTZ DEFAULT NOW(),
   joined_at TIMESTAMPTZ DEFAULT NOW()
 );
 

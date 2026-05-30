@@ -88,15 +88,23 @@ export default function RoomPage({ params }: Props) {
   const [stopwatchLaps, setStopwatchLaps] = useState<number[]>([]);
   const [approvalStatusSupported, setApprovalStatusSupported] = useState<boolean | null>(null);
   const [focusTaskSupported, setFocusTaskSupported] = useState<boolean | null>(null);
+  const [lastSeenSupported, setLastSeenSupported] = useState<boolean | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
+  const sessionTimingRef = useRef<{ startedAtMs: number; durationSeconds: number } | null>(null);
   const stopwatchRef = useRef<number | null>(null);
   const activityPollRef = useRef<number | null>(null);
+  const presencePollRef = useRef<number | null>(null);
   const leaveSentRef = useRef(false);
 
   const [extraSeats, setExtraSeats] = useState(0);
   const [extraTables, setExtraTables] = useState(0);
   const [extraShelves, setExtraShelves] = useState(0);
   const [extrasSupported, setExtrasSupported] = useState<boolean | null>(null);
+  const [hiddenMetroSeats, setHiddenMetroSeats] = useState<string[]>([]);
+  const [hiddenCafeTables, setHiddenCafeTables] = useState<string[]>([]);
+  const [hiddenCafeSeats, setHiddenCafeSeats] = useState<string[]>([]);
+  const [hiddenLibraryCubicles, setHiddenLibraryCubicles] = useState<string[]>([]);
 
   const pushToast = (message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -115,14 +123,6 @@ export default function RoomPage({ params }: Props) {
     if (typeof shelves === "number") payload.extra_shelves = shelves;
 
     if (Object.keys(payload).length === 0) return;
-
-    const nextCapacity =
-      (room?.max_members ?? null) !== null
-        ? (room?.max_members ?? 0) +
-          (typeof seats === "number" ? 1 : 0) +
-          (typeof tables === "number" ? 1 : 0) +
-          (typeof shelves === "number" ? 1 : 0)
-        : null;
 
     try {
       // detect support once
@@ -149,24 +149,61 @@ export default function RoomPage({ params }: Props) {
         if (msg.includes("Could not find the 'extra_")) setExtrasSupported(false);
         return;
       }
-
-      if (nextCapacity !== null) {
-        const { error: capacityError } = await supabase
-          .from("rooms")
-          .update({ max_members: nextCapacity })
-          .eq("id", roomId);
-
-        if (capacityError) {
-          console.warn("Could not persist updated room capacity:", capacityError.message || capacityError);
-        } else {
-          setRoom((currentRoom) =>
-            currentRoom ? { ...currentRoom, max_members: nextCapacity } : currentRoom
-          );
-        }
-      }
     } catch (err) {
       console.warn("Could not persist extras (unexpected):", err);
     }
+  };
+
+  const updateRoomCapacity = async (delta: number) => {
+    if (!roomId || delta === 0) return;
+    if (room?.max_members === null || room?.max_members === undefined) return;
+
+    const nextCapacity = Math.max(0, room.max_members + delta);
+
+    try {
+      const { error } = await supabase.from("rooms").update({ max_members: nextCapacity }).eq("id", roomId);
+
+      if (error) {
+        console.warn("Could not persist updated room capacity:", error.message || error);
+        return;
+      }
+
+      setRoom((currentRoom) => (currentRoom ? { ...currentRoom, max_members: nextCapacity } : currentRoom));
+    } catch (err) {
+      console.warn("Could not update room capacity", err);
+    }
+  };
+
+  const clearSessionTimer = () => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
+    sessionTimingRef.current = null;
+  };
+
+  const syncSessionTimer = (startedAt: string | number | Date, durationSeconds: number, activeSessionId: string) => {
+    const startedAtMs = new Date(startedAt).getTime();
+    sessionTimingRef.current = { startedAtMs, durationSeconds };
+    setSessionId(activeSessionId);
+    setTimerTotalSeconds(durationSeconds);
+
+    const updateTimer = () => {
+      const timing = sessionTimingRef.current;
+      if (!timing) return;
+
+      const elapsedSeconds = Math.floor((Date.now() - timing.startedAtMs) / 1000);
+      setTimerSeconds(Math.max(timing.durationSeconds - elapsedSeconds, 0));
+    };
+
+    updateTimer();
+
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+    }
+
+    timerRef.current = window.setInterval(updateTimer, 1000);
   };
 
   const layoutName = normalizeLayout(room);
@@ -174,12 +211,19 @@ export default function RoomPage({ params }: Props) {
   const joinedCount = members.length;
   const approvedMembers = members.filter((member) => member.approval_status !== "waiting");
   const pendingMembers = members.filter((member) => member.approval_status === "waiting");
+  const activeMembers = members.filter((member) => {
+    if (!member.last_seen_at) return true;
+    return Date.now() - new Date(member.last_seen_at).getTime() <= 60 * 1000;
+  });
+  const activeApprovedMembers = activeMembers.filter((member) => member.approval_status !== "waiting");
+  const activePendingMembers = activeMembers.filter((member) => member.approval_status === "waiting");
   const selectedPreset = TIMER_PRESETS.find((preset) => preset.id === selectedPresetId) || TIMER_PRESETS[0];
 
   useEffect(() => {
     let membersChannel: ReturnType<typeof supabase.channel> | null = null;
     let sessionsChannel: ReturnType<typeof supabase.channel> | null = null;
     let activityChannel: ReturnType<typeof supabase.channel> | null = null;
+    let roomChannel: ReturnType<typeof supabase.channel> | null = null;
     const initialize = async () => {
       const resolvedParams = await params;
       const id = resolvedParams.id;
@@ -195,6 +239,7 @@ export default function RoomPage({ params }: Props) {
         const sess = await supabase.auth.getSession();
         const sessionUser = sess?.data?.session?.user;
         currentSessionUserId = sessionUser?.id || null;
+        setCurrentUserId(currentSessionUserId);
 
         if (currentSessionUserId) {
           const { data: profile } = await supabase
@@ -220,7 +265,7 @@ export default function RoomPage({ params }: Props) {
       // if a session is already active, bootstrap it immediately
       const { data: activeSession } = await supabase
         .from("sessions")
-        .select("id, started_at")
+        .select("id, started_at, duration_seconds")
         .eq("room_id", id)
         .is("ended_at", null)
         .order("started_at", { ascending: false })
@@ -228,14 +273,8 @@ export default function RoomPage({ params }: Props) {
         .maybeSingle();
 
       if (activeSession) {
-        const startedAt = new Date(activeSession.started_at).getTime();
-        const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-        setSessionId(activeSession.id);
-        const totalSeconds = typeof activeSession.duration_seconds === "number" && activeSession.duration_seconds > 0 ? activeSession.duration_seconds : Math.max(seconds, 25 * 60);
-        setTimerTotalSeconds(totalSeconds);
-        setTimerSeconds(Math.max(totalSeconds - seconds, 0));
-        if (timerRef.current) window.clearInterval(timerRef.current);
-        timerRef.current = window.setInterval(() => setTimerSeconds((s) => Math.max(s - 1, 0)), 1000);
+        const totalSeconds = typeof activeSession.duration_seconds === "number" && activeSession.duration_seconds > 0 ? activeSession.duration_seconds : 25 * 60;
+        syncSessionTimer(activeSession.started_at, totalSeconds, activeSession.id);
       }
 
       const { data: existing } = await supabase
@@ -261,7 +300,18 @@ export default function RoomPage({ params }: Props) {
 
       // Only join if we don't already have a membership row for this user
       if (!existing || existing.length === 0) {
-        await joinRoom(id, savedUsername, savedAvatar || "", initialRoom?.visibility === "private" ? "waiting" : "approved");
+        let approvalStatus = "approved";
+
+        try {
+          const { data: roomMembers } = await supabase.from("room_members").select("id").eq("room_id", id);
+          if ((roomMembers ?? []).length > 0) {
+            approvalStatus = "waiting";
+          }
+        } catch (err) {
+          console.warn("Could not determine room occupancy for join approval", err);
+        }
+
+        await joinRoom(id, savedUsername, savedAvatar || "", approvalStatus);
       }
       await fetchMembers(id);
       await fetchActivity(id);
@@ -278,7 +328,18 @@ export default function RoomPage({ params }: Props) {
       const ownerUsername = roomRec?.owner_username;
       const ownerId = roomRec?.owner_id;
 
-      setIsHost(Boolean((ownerId && ownerId === currentSessionUserId) || ownerUsername === savedUsername));
+      setIsHost(Boolean((ownerId && ownerId === currentSessionUserId) || ownerUsername === savedUsername || (existing?.length === 1 && existing[0]?.username === savedUsername)));
+
+      roomChannel = supabase
+        .channel(`room-meta-${id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "rooms", filter: `id=eq.${id}` },
+          () => {
+            fetchRoom(id);
+          }
+        )
+        .subscribe();
 
       membersChannel = supabase
         .channel(`room-members-${id}`)
@@ -331,26 +392,18 @@ export default function RoomPage({ params }: Props) {
 
               // INSERT => session started
               if (ev === "INSERT") {
-                const startedAt = new Date(newRow.started_at).getTime();
-                const now = Date.now();
-                const seconds = Math.floor((now - startedAt) / 1000);
-
-                setSessionId(newRow.id);
-                setTimerSeconds(seconds);
-
-                if (timerRef.current) window.clearInterval(timerRef.current);
-                timerRef.current = window.setInterval(() => setTimerSeconds((s) => s + 1), 1000);
+                syncSessionTimer(newRow.started_at, newRow.duration_seconds || selectedPreset.workMinutes * 60, newRow.id);
               }
 
               // UPDATE => possibly ended
               if (ev === "UPDATE") {
                 if (newRow.ended_at) {
                   // session ended
-                  if (timerRef.current) {
-                    window.clearInterval(timerRef.current);
-                    timerRef.current = null;
-                  }
+                  clearSessionTimer();
                   setSessionId(null);
+                  setTimerSeconds(0);
+                } else if (newRow.started_at && typeof newRow.duration_seconds === "number") {
+                  syncSessionTimer(newRow.started_at, newRow.duration_seconds, newRow.id);
                 }
               }
             } catch (err) {
@@ -378,6 +431,9 @@ export default function RoomPage({ params }: Props) {
       if (sessionsChannel) {
         supabase.removeChannel(sessionsChannel);
       }
+      if (roomChannel) {
+        supabase.removeChannel(roomChannel);
+      }
       if (activityChannel) {
        supabase.removeChannel(activityChannel);
       }
@@ -403,6 +459,16 @@ export default function RoomPage({ params }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    const currentMember = members.find((member) => member.username === username);
+    const isSingleMemberRoom = members.length === 1 && Boolean(currentMember);
+    const isRoomOwner = Boolean(
+      (room?.owner_id && room.owner_id === currentUserId) || room?.owner_username === username
+    );
+
+    setIsHost(isSingleMemberRoom || isRoomOwner);
+  }, [members, room, username, currentUserId]);
+
   async function fetchRoom(id: string) {
     const { data } = await supabase.from("rooms").select("*").eq("id", id).single();
 
@@ -427,6 +493,7 @@ export default function RoomPage({ params }: Props) {
     setMembers((data ?? []) as Member[]);
   }
 
+  // Removed the fetchMembersCount function as it is no longer needed
   const ensureApprovalSupport = async () => {
     if (approvalStatusSupported !== null) return approvalStatusSupported;
 
@@ -705,8 +772,12 @@ if (
 
     // simple implementation: add seconds to timerSeconds when a session is active
     if (!sessionId) return;
-    setTimerSeconds((s) => s + seconds);
-    setTimerTotalSeconds((s) => s + seconds);
+    sessionTimingRef.current = sessionTimingRef.current
+      ? { ...sessionTimingRef.current, durationSeconds: sessionTimingRef.current.durationSeconds + seconds }
+      : null;
+
+      setTimerSeconds((s) => s + seconds);
+      setTimerTotalSeconds((s) => s + seconds);
 
     try {
       await supabase.from("activity_log").insert([
@@ -719,9 +790,9 @@ if (
 
   const joinSeat = async (seatId: string) => {
     const seatMembers = members.filter((member) => member.seat_id === seatId);
-    const currentMember = members.find((member) => member.username === username && member.approval_status !== "waiting");
+    const currentMember = members.find((member) => member.username === username);
 
-    if (!currentMember) {
+    if (!currentMember || (currentMember.approval_status === "waiting" && !isHost)) {
       alert("Wait for the host to allow you in first.");
       return;
     }
@@ -776,6 +847,64 @@ if (layoutName === "library") {
     }
   };
 
+  const deleteSeat = async (seatId: string) => {
+    const member = members.find((item) => item.seat_id === seatId);
+
+    if (member) {
+      await removeMember(member.id);
+    }
+
+    if (layoutName === "metro") {
+      if (seatId.startsWith("extra-metro-")) {
+        const next = Math.max(0, extraSeats - 1);
+        setExtraSeats(next);
+        await saveExtras(next, undefined, undefined);
+      }
+      setHiddenMetroSeats((current) => (current.includes(seatId) ? current : [...current, seatId]));
+      await updateRoomCapacity(-1);
+    }
+
+    if (layoutName === "library") {
+      if (seatId.startsWith("extra-library-")) {
+        const next = Math.max(0, extraShelves - 1);
+        setExtraShelves(next);
+        await saveExtras(undefined, undefined, next);
+      }
+      setHiddenLibraryCubicles((current) => (current.includes(seatId) ? current : [...current, seatId]));
+      await updateRoomCapacity(-1);
+    }
+
+    if (layoutName === "cafe" || layoutName === "coffee") {
+      setHiddenCafeSeats((current) => (current.includes(seatId) ? current : [...current, seatId]));
+      await updateRoomCapacity(-1);
+    }
+  };
+
+  const deleteTable = async (tableId: string) => {
+    const tableMembers = members.filter((item) => item.seat_id === tableId || item.seat_id?.startsWith(`${tableId}-seat-`));
+
+    for (const member of tableMembers) {
+      await removeMember(member.id);
+    }
+
+    if (layoutName === "cafe" || layoutName === "coffee") {
+      const extraIndex = generatedCafeIndex(tableId);
+      if (extraIndex !== null) {
+        const next = Math.max(0, extraTables - 1);
+        setExtraTables(next);
+        await saveExtras(undefined, next, undefined);
+      }
+      setHiddenCafeTables((current) => (current.includes(tableId) ? current : [...current, tableId]));
+      await updateRoomCapacity(-4);
+    }
+  };
+
+  const generatedCafeIndex = (tableId: string) => {
+    if (!tableId.startsWith("extra-cafe-")) return null;
+    const index = Number(tableId.replace("extra-cafe-", ""));
+    return Number.isFinite(index) ? index : null;
+  };
+
   const updateStatus = async (memberId: string, status: string) => {
     const currentMember = members.find((member) => member.id === memberId);
     if (currentMember?.approval_status === "waiting") return;
@@ -808,16 +937,8 @@ if (layoutName === "library") {
         return;
       }
 
-      setSessionId(data.id);
-      setTimerTotalSeconds(presetSeconds);
-      setTimerSeconds(presetSeconds);
+      syncSessionTimer(data.started_at, presetSeconds, data.id);
       pushToast("Focus session started");
-
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-      }
-
-      timerRef.current = window.setInterval(() => setTimerSeconds((seconds) => Math.max(seconds - 1, 0)), 1000);
 
       try {
         await supabase.from("activity_log").insert([
@@ -851,10 +972,7 @@ if (layoutName === "library") {
         return;
       }
 
-      if (timerRef.current) {
-        window.clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      clearSessionTimer();
 
       setSessionId(null);
       setTimerSeconds(0);
@@ -930,14 +1048,14 @@ if (layoutName === "library") {
 
     switch (layoutName) {
       case "metro":
-        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} deleteSeat={deleteSeat} isHost={isHost} extraBenches={extraSeats} hiddenSeatIds={hiddenMetroSeats} />;
       case "library":
-        return <LibraryLayout members={approvedMembers} joinSeat={joinSeat} extraCubicles={extraShelves} />;
+        return <LibraryLayout members={approvedMembers} joinSeat={joinSeat} deleteSeat={deleteSeat} isHost={isHost} extraCubicles={extraShelves} hiddenCubicleIds={hiddenLibraryCubicles} />;
       case "cafe":
       case "coffee":
-        return <CafeLayout members={approvedMembers} joinSeat={joinSeat} extraTables={extraTables} />;
+        return <CafeLayout members={approvedMembers} joinSeat={joinSeat} deleteTable={deleteTable} deleteSeat={deleteSeat} isHost={isHost} extraTables={extraTables} hiddenTableIds={hiddenCafeTables} hiddenSeatIds={hiddenCafeSeats} />;
       default:
-        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} deleteSeat={deleteSeat} isHost={isHost} extraBenches={extraSeats} hiddenSeatIds={hiddenMetroSeats} />;
     }
   };
 function formatActivity(item: any) {
@@ -980,7 +1098,7 @@ function formatActivity(item: any) {
   }
 }
   return (
-    <main className="min-h-screen p-8 bg-[#f6f6f7]">
+    <main className="min-h-screen bg-[#f6f6f7] p-4 md:p-8">
       <div className="fixed right-4 top-4 z-50 space-y-2 pointer-events-none">
         {toasts.map((toast) => (
           <div
@@ -992,12 +1110,12 @@ function formatActivity(item: any) {
         ))}
       </div>
 
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-4 flex flex-col gap-3 md:mb-6 md:flex-row md:items-start md:justify-between md:gap-4">
         <BackLink />
 
-        <div className="text-right">
-          <h1 className="text-6xl font-bold press-title">{room?.name}</h1>
-          <p className="text-2xl opacity-50 mt-2 capitalize">
+        <div className="text-left md:text-right">
+          <h1 className="text-3xl font-bold press-title md:text-6xl">{room?.name}</h1>
+          <p className="mt-1 text-sm capitalize opacity-50 md:mt-2 md:text-2xl">
             {layoutName}
             {maxMembers ? ` • ${joinedCount}/${maxMembers} joined` : ` • ${joinedCount} joined`}
           </p>
@@ -1035,6 +1153,17 @@ function formatActivity(item: any) {
                   setExtraSeats((c) => {
                     const next = c + 1;
                     saveExtras(next, undefined, undefined);
+                        void updateRoomCapacity(1);
+                    return next;
+                  });
+                }
+              : layoutName === "cafe" || layoutName === "coffee"
+              ? () => {
+                  if (!isHost) return;
+                  setExtraTables((c) => {
+                    const next = c + 1;
+                    saveExtras(undefined, next, undefined);
+                        void updateRoomCapacity(4);
                     return next;
                   });
                 }
@@ -1047,6 +1176,7 @@ function formatActivity(item: any) {
                   setExtraTables((c) => {
                     const next = c + 1;
                     saveExtras(undefined, next, undefined);
+                    void updateRoomCapacity(4);
                     return next;
                   });
                 }
@@ -1059,6 +1189,7 @@ function formatActivity(item: any) {
                   setExtraShelves((c) => {
                     const next = c + 1;
                     saveExtras(undefined, undefined, next);
+                    void updateRoomCapacity(1);
                     return next;
                   });
                 }
@@ -1067,15 +1198,15 @@ function formatActivity(item: any) {
           onCopyCode={copyCode}
         />
 
-        <div className="pointer-events-none absolute left-1/2 -top-7 z-30 -translate-x-1/2">
-          <div className="rounded-full border-2 border-black bg-white px-6 py-3 text-center shadow-[4px_4px_0_#000]">
-            <div className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50">
+        <div className="mb-4 flex justify-center md:pointer-events-none md:absolute md:left-1/2 md:-top-7 md:z-30 md:-translate-x-1/2 md:mb-0">
+          <div className="rounded-full border-2 border-black bg-white px-4 py-2 text-center shadow-[4px_4px_0_#000] md:px-6 md:py-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.3em] text-black/50 md:text-xs">
               {sessionId ? "Session timer" : "Ready to start"}
             </div>
-            <div className="mt-1 text-3xl font-black press-title">
+            <div className="mt-1 text-2xl font-black press-title md:text-3xl">
               {Math.floor(timerSeconds / 60)}:{String(timerSeconds % 60).padStart(2, "0")}
             </div>
-            <div className="text-xs text-black/60">
+            <div className="text-[10px] text-black/60 md:text-xs">
               {sessionId ? `${selectedPreset.label} • ${Math.floor(timerTotalSeconds / 60)}m total` : `${selectedPreset.label} preset`}
             </div>
           </div>
@@ -1108,11 +1239,16 @@ function formatActivity(item: any) {
         </div>
 
         <div className="space-y-6">
-          <div className="flex h-105 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
+          <div className="flex min-h-84 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Waiting area</h3>
                 <p className="text-xs opacity-60">Host reviews these people before letting them into the room.</p>
+                {isHost && (
+                  <p className="mt-2 rounded-sm border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                    If seats are full, add more seats before approving new members.
+                  </p>
+                )}
               </div>
               <span className="rounded-full border border-black/10 px-2 py-1 text-xs font-semibold">{pendingMembers.length}</span>
             </div>
@@ -1139,7 +1275,7 @@ function formatActivity(item: any) {
             </div>
           </div>
 
-          <div className="flex h-105 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
+          <div className="flex min-h-84 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Members</h3>
