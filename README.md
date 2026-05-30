@@ -5,7 +5,7 @@ A collaborative study room platform designed around presence, accountability, an
 DeepSpace allows users to create public or private study rooms, invite others, take seats in themed environments, track focus sessions, and collaborate in real time.
 
 ## ✨ Features
-- Core Features
+### Core Features
 - Authentication
 - Guest Mode
 - Public & Private Study Rooms
@@ -15,7 +15,7 @@ DeepSpace allows users to create public or private study rooms, invite others, t
 - Activity Feed
 - Live Presence Tracking
 - Session Timer
-- Additional Enhancements
+### Additional Enhancements
 - Library, Café, and Metro themed environments
 - Interactive seating system
 - Waiting room approval workflow
