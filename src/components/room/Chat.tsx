@@ -72,6 +72,12 @@ export default function Chat({ roomId, username, userId }: { roomId: string; use
 
       <div className="border-t border-black/10 p-3 flex gap-2">
         <input value={text} onChange={(e) => setText(e.target.value)} className="flex-1 ds-input" placeholder="Message" />
+        onKeyDown={(e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    handleSendMessage();
+  }
+}}
         <button onClick={send} className="ds-btn">Send</button>
       </div>
     </div>
