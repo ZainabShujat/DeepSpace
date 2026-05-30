@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "describe('first', () => { second })",
+  title: "DeepSpace",
   description: "A virtual space for focused study sessions with friends.",
   viewport: "width=device-width, initial-scale=1",
 };
