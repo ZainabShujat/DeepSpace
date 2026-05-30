@@ -87,90 +87,86 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="flex-1 flex flex-col items-center justify-center text-center px-8">
 
-          <h1
-            className="press-title text-6xl md:text-8xl text-white mb-6"
-            style={{
-              textShadow: "6px 6px 0 #000",
-            }}
-          >
-            DEEPSPACE
-          </h1>
+  <h1
+    className="press-title text-7xl md:text-9xl text-white mb-6"
+    style={{
+      textShadow: "6px 6px 0 #000",
+    }}
+  >
+    DEEPSPACE
+  </h1>
 
-          <p
-            className="text-white text-xl max-w-3xl mb-4"
-            style={{
-              textShadow: "2px 2px 0 #000",
-            }}
-          >
-            Create a room, take a seat, and stay accountable with others while you work.
-          </p>
+  <p
+    className="text-white text-xl md:text-2xl max-w-3xl mb-4"
+    style={{
+      textShadow: "2px 2px 0 #000",
+    }}
+  >
+    Create a room, take a seat, and stay accountable with others while you work.
+  </p>
 
-          <p
-            className="text-white/90 text-lg mb-10"
-            style={{
-              textShadow: "2px 2px 0 #000",
-            }}
-          >
-            Choose a room. Take a seat. Study together.
+  <p
+    className="text-white/90 text-lg md:text-xl mb-10"
+    style={{
+      textShadow: "2px 2px 0 #000",
+    }}
+  >
+    Choose a room. Take a seat. Study together.
+  </p>
 
-          </p>
+  <div className="flex gap-4 mb-8">
+    <Link
+      href="/explore"
+      className="ds-btn px-6 py-3"
+    >
+      Explore
+    </Link>
 
-          <div className="flex gap-4">
+    <Link
+      href="/auth"
+      className="ds-btn px-6 py-3"
+    >
+      Join Now
+    </Link>
+  </div>
 
-            <Link
-              href="/explore"
-              className="ds-btn px-6 py-3"
-            >
-              Explore
-            </Link>
+  <div
+    className="text-white/90 text-sm md:text-base space-y-2 mb-12"
+    style={{
+      textShadow: "1px 1px 0 #000",
+    }}
+  >
+    <p>✓ Public & private rooms</p>
+    <p>✓ Shared Pomodoro timers</p>
+    <p>✓ Live presence & activity tracking</p>
+    <p>✓ Focus session history</p>
+    <p>✓ Profiles, avatars & accountability</p>
+  </div>
 
-            <Link
-              href="/auth"
-              className="ds-btn px-6 py-3"
-            >
-              Join Now
-            </Link>
-            <p
-            className="text-white/90 text-lg mb-10"
-            style={{
-              textShadow: "2px 2px 0 #000",
-            }}
-          >
-            
-            ✓ Public and private rooms <br>
-✓ Shared Pomodoro timers<br>
-✓ Live presence and activity tracking<br>
-✓ Focus session history<br>
-✓ User profiles and avatars<br>
+  <div
+    className="
+      flex
+      flex-wrap
+      justify-center
+      gap-6
+      text-white
+      text-sm
+      md:text-base
+    "
+  >
+    <span>FOCUS</span>
+    <span>POMODORO</span>
+    <span>PRODUCTIVITY</span>
+    <span>DEEP WORK</span>
+    <span>COLLABORATION</span>
+    <span>ACCOUNTABILITY</span>
+  </div>
 
-          </p>
-
-          </div>
-
-          {/* Bottom Keywords */}
-          <div
-            className="
-              mt-16
-              flex
-              flex-wrap
-              justify-center
-              gap-6
-              text-white
-              text-sm
-            "
-          >
-            <span>FOCUS</span>
-            <span>POMODORO</span>
-            <span>PRODUCTIVITY</span>
-            <span>DEEP WORK</span>
-            <span>COLLABORATION</span>
-            <span>ACCOUNTABILITY</span>
-          </div>
-
-        </section>
+</section>
 
       </div>
 
     </main>
   );
-}
+  }
+
