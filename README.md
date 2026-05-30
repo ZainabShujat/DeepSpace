@@ -3,6 +3,8 @@
 A collaborative study room platform designed around presence, accountability, and focused work.
 
 DeepSpace allows users to create public or private study rooms, invite others, take seats in themed environments, track focus sessions, and collaborate in real time.
+## 🚀 Live Demo
+https://deep-space-nine.vercel.app/
 
 ## ✨ Features
 ### Core Features
@@ -51,8 +53,7 @@ DeepSpace allows users to create public or private study rooms, invite others, t
 - Tailwind CSS
 - Supabase
 - Vercel
-## 🚀 Live Demo
-https://deep-space-nine.vercel.app/
+
 ## 📦 Setup
 git clone ...
 npm install
