@@ -6,6 +6,17 @@ DeepSpace allows users to create public or private study rooms, invite others, t
 ## 🚀 Live Demo
 https://deep-space-nine.vercel.app/
 
+## Architecture
+
+DeepSpace is built around:
+
+- Authentication & guest access
+- Room management
+- Realtime presence tracking
+- Activity logging
+- Shared focus sessions
+- Chat & collaboration
+
 ## ✨ Features
 ### Core Features
 - Authentication
@@ -26,6 +37,15 @@ https://deep-space-nine.vercel.app/
 - User profiles and avatars
 - Focus goals/status tracking
 - Mobile responsive design
+
+## Challenges Solved
+
+- Realtime member synchronization
+- Host transfer when room owner leaves
+- Guest and authenticated user flows
+- Activity feed generation
+- Shared session state across users
+
 ## 🖼 Screenshots
 ### Landing Page
 <img width="960" height="426" alt="landing" src="https://github.com/user-attachments/assets/1e50c628-9f79-49ca-bd6d-0a315c89b604" />
