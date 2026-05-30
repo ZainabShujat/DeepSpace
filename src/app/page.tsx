@@ -102,8 +102,7 @@ export default function LandingPage() {
               textShadow: "2px 2px 0 #000",
             }}
           >
-            Collaborative study rooms inspired by libraries,
-            cafés and metro journeys.
+            Create a room, take a seat, and stay accountable with others while you work.
           </p>
 
           <p
@@ -113,6 +112,7 @@ export default function LandingPage() {
             }}
           >
             Choose a room. Take a seat. Study together.
+
           </p>
 
           <div className="flex gap-4">
@@ -130,6 +130,20 @@ export default function LandingPage() {
             >
               Join Now
             </Link>
+            <p
+            className="text-white/90 text-lg mb-10"
+            style={{
+              textShadow: "2px 2px 0 #000",
+            }}
+          >
+            
+            ✓ Public and private rooms <br>
+✓ Shared Pomodoro timers<br>
+✓ Live presence and activity tracking<br>
+✓ Focus session history<br>
+✓ User profiles and avatars<br>
+
+          </p>
 
           </div>
 
