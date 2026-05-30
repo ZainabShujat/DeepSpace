@@ -10,6 +10,10 @@ export async function POST(req: Request) {
 
     if (!roomId || !username) return NextResponse.json({ error: 'missing' }, { status: 400 });
 
+    // validate roomId looks like a UUID to avoid DB errors from bad inputs
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRe.test(roomId)) return NextResponse.json({ error: 'invalid_room_id' }, { status: 400 });
+
     const { data: member } = await supabase
       .from('room_members')
       .select('id, username, seat_id')

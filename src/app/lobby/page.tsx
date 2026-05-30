@@ -42,7 +42,7 @@ export default function LobbyPage() {
 
   return (
     <main
-      className="relative min-h-screen px-10 py-12 bg-cover bg-center bg-no-repeat"
+      className="relative min-h-screen px-4 py-8 sm:px-8 sm:py-12 bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/backgrounds/lobby.png')" }}
     >
       <div className="pointer-events-none absolute left-1/2 top-6 z-20 -translate-x-1/2">
@@ -51,16 +51,7 @@ export default function LobbyPage() {
         </div>
       </div>
 
-      <div className="
-        max-w-350
-        mx-auto
-        rounded-[28px]
-        border border-black/5
-        bg-white/15
-        p-8
-        shadow-[0_16px_40px_rgba(0,0,0,0.04)]
-        backdrop-blur-none
-      ">
+      <div className="max-w-350 mx-auto rounded-[28px] border border-black/5 bg-white/15 p-6 md:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] backdrop-blur-none">
 
         {/* TOP BAR */}
 
@@ -71,8 +62,8 @@ export default function LobbyPage() {
           mb-12
         ">
 
-          <div className="flex items-start gap-4">
-            <BackLink href="/" label="Back to landing" />
+            <div className="flex items-start gap-4">
+            <BackLink />
 
             <p className="
               text-neutral-500
@@ -138,15 +129,9 @@ export default function LobbyPage() {
 
         {/* MAIN */}
 
-        <div className="
-          grid
-          grid-cols-2
-          gap-10
-        ">
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <CreateRoom />
           <RoomList />
-
         </div>
 
       </div>

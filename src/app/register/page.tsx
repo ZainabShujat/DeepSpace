@@ -43,9 +43,9 @@ console.log("ONBOARDING NEXT:", nextPath);
 	};
 
 	return (
-		<main className="min-h-screen flex items-center justify-center bg-neutral-100">
+		<main className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/backgrounds/login-register.png')" }}>
 
-			<div className="w-100 border bg-white p-10 thick-border pixel-shadow rounded-sm">
+			<div className="w-100 border bg-white/95 p-8 thick-border pixel-shadow rounded-sm backdrop-blur-sm">
 
 				<h1 className="text-4xl font-bold mb-8 press-title">Register</h1>
 

@@ -60,7 +60,7 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#f6f6f7] px-8 py-10">
       <div className="mx-auto max-w-4xl rounded-[36px] border border-black/10 bg-white p-8 shadow-[0_24px_80px_rgba(0,0,0,0.08)]">
         <div className="mb-6">
-          <BackLink href="/lobby" label="Back to lobby" />
+          <BackLink />
         </div>
 
         <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">

@@ -17,11 +17,11 @@ export default function GuestPage() {
 };
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
+    <main className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/backgrounds/guest.png')" }}>
 
-      <div className="border p-10 w-100 bg-white thick-border pixel-shadow">
+      <div className="border p-10 w-100 bg-white/95 thick-border pixel-shadow">
         <div className="mb-6">
-          <BackLink href="/auth" label="Back" />
+          <BackLink href="/auth" />
         </div>
 
         <h1 className="text-3xl font-bold mb-4 press-title">

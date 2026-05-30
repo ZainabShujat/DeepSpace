@@ -7,6 +7,7 @@
 :root {
   --bg: #ececec;
   --text: #161616;
+  color-scheme: light;
 
   --metro-bg: #D8DBE2;
   --metro-seat: #A1A6B4;
@@ -43,11 +44,13 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
+  color-scheme: light;
 
   font-family:
     Inter,
@@ -77,6 +80,59 @@ body {
   border: 3px solid #000;
 
   background: #fff;
+}
+
+/* Responsive adjustments (mobile-first) */
+@media (max-width: 640px) {
+  .pixel-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .press-title {
+    font-size: 14px;
+  }
+
+  .press-button {
+    font-size: 10px;
+  }
+
+  .ds-card {
+    padding: 12px !important;
+    border-radius: 8px;
+  }
+
+  .ds-panel {
+    padding: 12px !important;
+    border-radius: 8px;
+  }
+
+  .ds-btn {
+    display: inline-block;
+    width: auto;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .ds-btn.mobile-full {
+    display: block;
+    width: 100%;
+  }
+
+  .landing-bg {
+    background-size: cover;
+    background-position: center;
+  }
+
+  .library-header,
+  .metro-header,
+  .cafe-header {
+    height: 36px;
+  }
+}
+
+@media (min-width: 641px) {
+  /* Desktop tweaks kept as-is */
 }
 
 .press-title {

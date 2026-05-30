@@ -8,8 +8,8 @@ export default function AboutPage() {
       style={{ backgroundImage: "url('/backgrounds/lobby.png')" }}
     >
       <div className="mx-auto max-w-4xl bg-white p-10 thick-border pixel-shadow">
-        <div className="mb-6">
-          <BackLink href="/lobby" label="Back to lobby" />
+        <div className="mb-4">
+          <BackLink />
         </div>
 
         <h1 className="mb-4 text-4xl font-black press-title">What is DeepSpace?</h1>
@@ -69,7 +69,7 @@ export default function AboutPage() {
         </p>
 
         <div className="mt-8">
-          <Link href="/" className="text-sm underline">Back to landing</Link>
+          <Link href="/" className="text-sm underline">Back</Link>
         </div>
       </div>
     </main>

@@ -7,11 +7,18 @@ interface Props {
   timerSeconds: number;
   isHost: boolean;
   selectedPresetLabel: string;
+  stopwatchSeconds: number;
+  stopwatchRunning: boolean;
+  stopwatchLaps: number[];
   timerPresets: Array<{ id: string; label: string; workMinutes: number; breakMinutes: number }>;
   onPresetChange: (presetId: string) => void;
   onStart: () => void;
   onEnd: () => void;
   onExtend: (seconds?: number) => void;
+  onStopwatchStart: () => void;
+  onStopwatchStop: () => void;
+  onStopwatchReset: () => void;
+  onStopwatchLap: () => void;
   onAddSeat?: () => void;
   onAddTable?: () => void;
   onAddCubicle?: () => void;
@@ -23,11 +30,18 @@ export default function RoomControls({
   timerSeconds,
   isHost,
   selectedPresetLabel,
+  stopwatchSeconds,
+  stopwatchRunning,
+  stopwatchLaps,
   timerPresets,
   onPresetChange,
   onStart,
   onEnd,
   onExtend,
+  onStopwatchStart,
+  onStopwatchStop,
+  onStopwatchReset,
+  onStopwatchLap,
   onAddSeat,
   onAddTable,
   onAddCubicle,
@@ -36,8 +50,8 @@ export default function RoomControls({
   const canControl = isHost;
 
   return (
-    <div className="absolute top-4 right-4 z-20">
-      <div className="bg-white/95 p-3 rounded thick-border pixel-shadow flex flex-col gap-2">
+    <div className="absolute top-4 right-4 z-20 w-[320px] max-w-[calc(100vw-2rem)]">
+      <div className="bg-white/95 p-3 rounded thick-border pixel-shadow flex flex-col gap-3">
         {!sessionId ? (
           <>
             <label className="text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
@@ -74,6 +88,39 @@ export default function RoomControls({
             )}
           </div>
         )}
+
+        <div className="rounded border border-black/10 bg-black/3 p-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-black/50">
+            Stopwatch
+          </div>
+          <div className="mt-1 text-2xl font-black press-title tabular-nums">
+            {Math.floor(stopwatchSeconds / 60)}:{String(stopwatchSeconds % 60).padStart(2, "0")}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button onClick={onStopwatchStart} className="rounded bg-black px-3 py-1 text-xs text-white" disabled={stopwatchRunning}>
+              Start
+            </button>
+            <button onClick={onStopwatchStop} className="rounded border px-3 py-1 text-xs" disabled={!stopwatchRunning}>
+              Stop
+            </button>
+            <button onClick={onStopwatchReset} className="rounded border px-3 py-1 text-xs">
+              Reset
+            </button>
+            <button onClick={onStopwatchLap} className="rounded border px-3 py-1 text-xs" disabled={!stopwatchRunning}>
+              Lap
+            </button>
+          </div>
+          {stopwatchLaps.length > 0 && (
+            <div className="mt-3 max-h-28 overflow-y-auto rounded bg-white px-2 py-1 text-xs">
+              {stopwatchLaps.map((lap, index) => (
+                <div key={`${lap}-${index}`} className="flex items-center justify-between border-b border-black/5 py-1 last:border-0">
+                  <span>Lap {index + 1}</span>
+                  <span className="font-semibold tabular-nums">{Math.floor(lap / 60)}:{String(lap % 60).padStart(2, "0")}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-2 mt-1">
           {onAddSeat && (

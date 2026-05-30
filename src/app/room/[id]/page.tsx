@@ -83,7 +83,13 @@ export default function RoomPage({ params }: Props) {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [timerTotalSeconds, setTimerTotalSeconds] = useState(25 * 60);
   const [selectedPresetId, setSelectedPresetId] = useState(TIMER_PRESETS[0].id);
+  const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
+  const [stopwatchRunning, setStopwatchRunning] = useState(false);
+  const [stopwatchLaps, setStopwatchLaps] = useState<number[]>([]);
+  const [approvalStatusSupported, setApprovalStatusSupported] = useState<boolean | null>(null);
+  const [focusTaskSupported, setFocusTaskSupported] = useState<boolean | null>(null);
   const timerRef = useRef<number | null>(null);
+  const stopwatchRef = useRef<number | null>(null);
   const activityPollRef = useRef<number | null>(null);
   const leaveSentRef = useRef(false);
 
@@ -166,6 +172,8 @@ export default function RoomPage({ params }: Props) {
   const layoutName = normalizeLayout(room);
   const maxMembers = room?.max_members ?? null;
   const joinedCount = members.length;
+  const approvedMembers = members.filter((member) => member.approval_status !== "waiting");
+  const pendingMembers = members.filter((member) => member.approval_status === "waiting");
   const selectedPreset = TIMER_PRESETS.find((preset) => preset.id === selectedPresetId) || TIMER_PRESETS[0];
 
   useEffect(() => {
@@ -253,7 +261,7 @@ export default function RoomPage({ params }: Props) {
 
       // Only join if we don't already have a membership row for this user
       if (!existing || existing.length === 0) {
-        await joinRoom(id, savedUsername, savedAvatar || "");
+        await joinRoom(id, savedUsername, savedAvatar || "", initialRoom?.visibility === "private" ? "waiting" : "approved");
       }
       await fetchMembers(id);
       await fetchActivity(id);
@@ -360,6 +368,10 @@ export default function RoomPage({ params }: Props) {
         window.clearInterval(activityPollRef.current);
         activityPollRef.current = null;
       }
+      if (stopwatchRef.current) {
+        window.clearInterval(stopwatchRef.current);
+        stopwatchRef.current = null;
+      }
       if (membersChannel) {
         supabase.removeChannel(membersChannel);
       }
@@ -384,6 +396,9 @@ export default function RoomPage({ params }: Props) {
       }
       if (activityPollRef.current) {
         window.clearInterval(activityPollRef.current);
+      }
+      if (stopwatchRef.current) {
+        window.clearInterval(stopwatchRef.current);
       }
     };
   }, []);
@@ -412,6 +427,24 @@ export default function RoomPage({ params }: Props) {
     setMembers((data ?? []) as Member[]);
   }
 
+  const ensureApprovalSupport = async () => {
+    if (approvalStatusSupported !== null) return approvalStatusSupported;
+
+    const probe = await supabase.from("room_members").select("approval_status").limit(1).maybeSingle();
+    const supported = !probe.error;
+    setApprovalStatusSupported(supported);
+    return supported;
+  };
+
+  const ensureFocusTaskSupport = async () => {
+    if (focusTaskSupported !== null) return focusTaskSupported;
+
+    const probe = await supabase.from("room_members").select("focus_task").limit(1).maybeSingle();
+    const supported = !probe.error;
+    setFocusTaskSupported(supported);
+    return supported;
+  };
+
   async function fetchActivity(id: string) {
   const { data } = await supabase
     .from("activity_log")
@@ -426,8 +459,16 @@ export default function RoomPage({ params }: Props) {
   async function joinRoom(
     id: string,
     currentUsername: string,
-    currentAvatar: string
+    currentAvatar: string,
+    approvalStatus: string = "approved"
   ) {
+    // basic validation: room id should be a UUID to avoid DB errors
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRe.test(id)) {
+      console.warn("Attempted to join room with invalid id:", id);
+      alert("Invalid room identifier");
+      return;
+    }
     const joinActivityKey = `room-join-logged:${id}:${currentUsername}`;
 
     const { data: existing } = await supabase
@@ -458,6 +499,8 @@ export default function RoomPage({ params }: Props) {
     }
 
     try {
+      const canUseApprovalStatus = await ensureApprovalSupport();
+      const canUseFocusTask = await ensureFocusTaskSupport();
       const { error: insertErr } = await supabase.from("room_members").insert([
         {
           room_id: id,
@@ -465,6 +508,8 @@ export default function RoomPage({ params }: Props) {
           avatar: currentAvatar,
           status: "on arrival",
           seat_id: null,
+          ...(canUseApprovalStatus ? { approval_status: approvalStatus } : {}),
+          ...(canUseFocusTask ? { focus_task: "" } : {}),
         },
       ]);
 
@@ -496,6 +541,79 @@ export default function RoomPage({ params }: Props) {
       console.warn("Could not log activity", error);
     }
   }
+
+  const updateTask = async (memberId: string, task: string) => {
+    if (!(await ensureFocusTaskSupport())) return;
+
+    try {
+      await supabase.from("room_members").update({ focus_task: task }).eq("id", memberId);
+
+      setMembers((currentMembers) =>
+        currentMembers.map((member) =>
+          member.id === memberId ? { ...member, focus_task: task } : member
+        )
+      );
+    } catch (err) {
+      console.warn("Could not update task", err);
+    }
+  };
+
+  const approveMember = async (memberId: string) => {
+    if (!isHost) return;
+    if (!(await ensureApprovalSupport())) return;
+
+    try {
+      await supabase.from("room_members").update({ approval_status: "approved" }).eq("id", memberId);
+
+      const approvedMember = members.find((member) => member.id === memberId);
+      if (approvedMember) {
+        await supabase.from("activity_log").insert([
+          {
+            room_id: roomId,
+            user_id: null,
+            action: "approve_member",
+            details: {
+              from: "Host",
+              to: approvedMember.username,
+            },
+          },
+        ]);
+      }
+
+      await fetchMembers(roomId);
+      pushToast("Member allowed in");
+    } catch (err) {
+      console.warn("Could not approve member", err);
+    }
+  };
+
+  const startStopwatch = () => {
+    if (stopwatchRunning) return;
+    setStopwatchRunning(true);
+    stopwatchRef.current = window.setInterval(() => {
+      setStopwatchSeconds((seconds) => seconds + 1);
+    }, 1000);
+  };
+
+  const stopStopwatch = () => {
+    setStopwatchRunning(false);
+    if (stopwatchRef.current) {
+      window.clearInterval(stopwatchRef.current);
+      stopwatchRef.current = null;
+    }
+  };
+
+  const resetStopwatch = () => {
+    stopStopwatch();
+    setStopwatchSeconds(0);
+    setStopwatchLaps([]);
+  };
+
+  const lapStopwatch = () => {
+    if (!stopwatchRunning) return;
+    setStopwatchLaps((current) => [...current, stopwatchSeconds]);
+  };
+
   useEffect(() => {
     const sendLeave = () => {
       if (!roomId || !username || leaveSentRef.current) return;
@@ -528,21 +646,15 @@ export default function RoomPage({ params }: Props) {
       sendLeave();
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        sendLeave();
-      }
-    };
-
+    // Only send leave when the page is being unloaded/hidden (close or navigate away).
+    // Avoid sending leave on simple tab visibility changes which would erroneously remove members.
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handlePageHide);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       sendLeave();
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handlePageHide);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
 }, [roomId, username]);
 
@@ -607,7 +719,12 @@ if (
 
   const joinSeat = async (seatId: string) => {
     const seatMembers = members.filter((member) => member.seat_id === seatId);
-    const currentMember = members.find((member) => member.username === username);
+    const currentMember = members.find((member) => member.username === username && member.approval_status !== "waiting");
+
+    if (!currentMember) {
+      alert("Wait for the host to allow you in first.");
+      return;
+    }
     let layoutCapacity = SEAT_CAPACITY[layoutName] ?? 1;
 
 if (layoutName === "metro") {
@@ -660,6 +777,9 @@ if (layoutName === "library") {
   };
 
   const updateStatus = async (memberId: string, status: string) => {
+    const currentMember = members.find((member) => member.id === memberId);
+    if (currentMember?.approval_status === "waiting") return;
+
     await supabase.from("room_members").update({ status }).eq("id", memberId);
 
     setMembers((currentMembers) =>
@@ -810,14 +930,14 @@ if (layoutName === "library") {
 
     switch (layoutName) {
       case "metro":
-        return <MetroLayout members={members} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} extraBenches={extraSeats} />;
       case "library":
-        return <LibraryLayout members={members} joinSeat={joinSeat} extraCubicles={extraShelves} />;
+        return <LibraryLayout members={approvedMembers} joinSeat={joinSeat} extraCubicles={extraShelves} />;
       case "cafe":
       case "coffee":
-        return <CafeLayout members={members} joinSeat={joinSeat} extraTables={extraTables} />;
+        return <CafeLayout members={approvedMembers} joinSeat={joinSeat} extraTables={extraTables} />;
       default:
-        return <MetroLayout members={members} joinSeat={joinSeat} extraBenches={extraSeats} />;
+        return <MetroLayout members={approvedMembers} joinSeat={joinSeat} extraBenches={extraSeats} />;
     }
   };
 function formatActivity(item: any) {
@@ -849,6 +969,9 @@ function formatActivity(item: any) {
     case "host_transfer":
       return `${details.from || "Someone"} passed host to ${details.to || "another member"}`;
 
+    case "approve_member":
+      return `${details.to || "Someone"} was allowed into the room`;
+
     case "extend_break":
       return `Break extended by ${details.seconds || 0} seconds`;
 
@@ -870,7 +993,7 @@ function formatActivity(item: any) {
       </div>
 
       <div className="mb-6 flex items-start justify-between gap-4">
-        <BackLink href="/lobby" label="Back to lobby" />
+        <BackLink />
 
         <div className="text-right">
           <h1 className="text-6xl font-bold press-title">{room?.name}</h1>
@@ -893,11 +1016,18 @@ function formatActivity(item: any) {
           timerSeconds={timerSeconds}
           isHost={isHost}
           selectedPresetLabel={selectedPreset.label}
+          stopwatchSeconds={stopwatchSeconds}
+          stopwatchRunning={stopwatchRunning}
+          stopwatchLaps={stopwatchLaps}
           timerPresets={TIMER_PRESETS}
           onPresetChange={setSelectedPresetId}
           onStart={startSession}
           onEnd={endSession}
           onExtend={extendBreak}
+          onStopwatchStart={startStopwatch}
+          onStopwatchStop={stopStopwatch}
+          onStopwatchReset={resetStopwatch}
+          onStopwatchLap={lapStopwatch}
           onAddSeat={
             layoutName === "metro"
               ? () => {
@@ -937,7 +1067,7 @@ function formatActivity(item: any) {
           onCopyCode={copyCode}
         />
 
-        <div className="pointer-events-none absolute left-1/2 top-[-1.75rem] z-30 -translate-x-1/2">
+        <div className="pointer-events-none absolute left-1/2 -top-7 z-30 -translate-x-1/2">
           <div className="rounded-full border-2 border-black bg-white px-6 py-3 text-center shadow-[4px_4px_0_#000]">
             <div className="text-xs font-semibold uppercase tracking-[0.3em] text-black/50">
               {sessionId ? "Session timer" : "Ready to start"}
@@ -958,51 +1088,75 @@ function formatActivity(item: any) {
           Leave Room
         </button>
       </div>
-      <div className="mt-8">
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2">
-            <div className="col-span-2 space-y-6">
+      <div className="mt-8 grid gap-6 xl:grid-cols-[1.5fr_0.95fr]">
+        <div className="space-y-6">
+          <Chat roomId={roomId} username={username} userId={null} />
 
-  <Chat
-    roomId={roomId}
-    username={username}
-    userId={null}
-  />
+          <div className="flex h-105 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
+            <h3 className="mb-3 text-lg font-semibold">Recent Activity</h3>
 
-  <div className="border thick-border p-4 rounded-sm">
-    <h3 className="text-lg font-semibold mb-3">
-      Recent Activity
-    </h3>
+            <div className="flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
+              {activity.map((item) => (
+                <div key={item.id} className="rounded-sm border border-black/5 bg-black/2 p-3">
+                  <div className="font-medium">{formatActivity(item)}</div>
 
-    <div className="space-y-2 text-sm">
-      {activity.map((item) => (
-        <div key={item.id}>
-          <div className="font-medium">
-            {formatActivity(item)}
-          </div>
-
-          <div className="opacity-60 text-xs">
-            {new Date(item.created_at)
-              .toLocaleTimeString()}
+                  <div className="text-xs opacity-60">{new Date(item.created_at).toLocaleTimeString()}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      ))}
-    </div>
 
-  </div>
+        <div className="space-y-6">
+          <div className="flex h-105 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Waiting area</h3>
+                <p className="text-xs opacity-60">Host reviews these people before letting them into the room.</p>
+              </div>
+              <span className="rounded-full border border-black/10 px-2 py-1 text-xs font-semibold">{pendingMembers.length}</span>
+            </div>
 
-</div>
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+              {pendingMembers.length === 0 ? (
+                <div className="rounded-sm border border-dashed border-black/10 p-4 text-sm opacity-60">
+                  No one waiting right now.
+                </div>
+              ) : (
+                pendingMembers.map((member) => (
+                  <MemberCard
+                    key={member.id}
+                    member={member}
+                    isCurrentUser={member.username === username}
+                    updateStatus={updateStatus}
+                    updateTask={updateTask}
+                    approveMember={approveMember}
+                    isHost={isHost}
+                    onRemove={removeMember}
+                  />
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="col-span-1">
-            <h3 className="text-lg font-semibold mb-2">Members</h3>
-            <div className="space-y-3">
-              {members.map((member) => (
+          <div className="flex h-105 flex-col overflow-hidden rounded-sm border thick-border bg-white p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Members</h3>
+                <p className="text-xs opacity-60">Approved members currently in the room.</p>
+              </div>
+              <span className="rounded-full border border-black/10 px-2 py-1 text-xs font-semibold">{approvedMembers.length}</span>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+              {approvedMembers.map((member) => (
                 <MemberCard
                   key={member.id}
                   member={member}
                   isCurrentUser={member.username === username}
                   updateStatus={updateStatus}
+                  updateTask={updateTask}
+                  approveMember={approveMember}
                   isHost={isHost}
                   onRemove={removeMember}
                 />

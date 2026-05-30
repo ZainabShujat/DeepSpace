@@ -141,14 +141,14 @@ export default function ActivityPage() {
   const placeholderValue = isLoggedIn ? "--" : "Guest mode";
 
   return (
-    <main className="p-4 sm:p-6 md:p-8">
+    <main className="p-4 sm:p-6 md:p-8 bg-cover bg-center" style={{ backgroundImage: "url('/backgrounds/activity.png')" }}>
       <div className="mb-6">
-        <BackLink href="/lobby" label="Back to lobby" />
+        <BackLink />
       </div>
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold press-title">Activity & Sessions</h1>
-        <p className="mt-2 max-w-2xl text-sm opacity-70">
+        <h1 className="text-3xl font-bold press-title text-white">Activity & Sessions</h1>
+        <p className="mt-2 max-w-2xl text-sm text-white/80">
           Recent room events and session history, with readable activity labels and quick status summaries.
         </p>
       </div>

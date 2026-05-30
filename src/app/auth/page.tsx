@@ -12,11 +12,11 @@ function AuthContent() {
   console.log("AUTH NEXT:", nextPath);
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-neutral-100">
-      <div className="w-130 border bg-white p-10 thick-border pixel-shadow">
-        <div className="mb-6">
-          <BackLink href="/lobby" label="Back to lobby" />
-        </div>
+    <main className="min-h-screen flex items-center justify-center bg-cover bg-center" style={{ backgroundImage: "url('/backgrounds/login-register.png')" }}>
+      <div className="w-130 border bg-white/95 p-8 thick-border pixel-shadow backdrop-blur-sm">
+            <div className="mb-4">
+          <BackLink />
+      </div>
 
         <h1 className="text-4xl font-bold mb-6 press-title">
           Sign in or continue

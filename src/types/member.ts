@@ -4,6 +4,8 @@ export interface Member {
   status: string;
   avatar: string;
   seat_id?: string | null;
+  approval_status?: string | null;
+  focus_task?: string | null;
 }
 
 export default Member;

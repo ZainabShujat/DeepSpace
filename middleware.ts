@@ -27,7 +27,7 @@ export async function middleware(req: NextRequest) {
 
   const isGuest = req.cookies.get("deepspace-guest")?.value === "true";
 
-  const protectedPaths = ["/lobby", "/room"];
+  const protectedPaths = ["/room"];
 
   const pathname = req.nextUrl.pathname;
 
@@ -41,5 +41,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/lobby/:path*", "/room/:path*"],
+  matcher: ["/room/:path*"],
 };

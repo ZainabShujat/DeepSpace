@@ -28,7 +28,7 @@ export default function ExplorePage() {
   return (
     <main className="min-h-screen bg-[#ececec] p-4 sm:p-6 md:p-12">
       <div className="mx-auto max-w-6xl space-y-10">
-        <BackLink href="/lobby" label="Back to lobby" />
+        <BackLink href="/lobby" />
 
         <section className="ds-card overflow-hidden bg-white">
           <div className="library-header" />
@@ -42,17 +42,17 @@ export default function ExplorePage() {
                 DeepSpace is built around a few simple areas: a lobby for rooms, live rooms for focused study,
                 activity history for what happened, and a profile that keeps track of who you are.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link href="/lobby" className="ds-btn px-5 py-3">
-                  Go to Lobby
-                </Link>
-                <Link href="/auth" className="ds-btn ds-btn-secondary px-5 py-3">
-                  Login / Register
-                </Link>
-                <Link href="/about" className="ds-btn ds-btn-secondary px-5 py-3">
-                  About <span className="press-title inline-block align-middle text-[0.85em]">DeepSpace</span>
-                </Link>
-              </div>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Link href="/lobby" className="ds-btn px-5 py-3">
+                    Go to Lobby
+                  </Link>
+                  <Link href="/auth" className="ds-btn ds-btn-secondary px-5 py-3">
+                    Login / Register
+                  </Link>
+                  <Link href="/about" className="ds-btn ds-btn-secondary px-5 py-3">
+                    About <span className="press-title inline-block align-middle text-[0.85em]">DeepSpace</span>
+                  </Link>
+                </div>
             </div>
 
             <div className="ds-panel p-5">

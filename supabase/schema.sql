@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS room_members (
   avatar TEXT,
   seat_id TEXT,
   status TEXT,
+  approval_status TEXT NOT NULL DEFAULT 'approved',
+  focus_task TEXT,
   joined_at TIMESTAMPTZ DEFAULT NOW()
 );
 
